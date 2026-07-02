@@ -69,11 +69,11 @@ export default function ClubsPage() {
           </div>
 
           {/* 1. TOP 3 PODIUM LAYOUT */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end max-w-4xl mx-auto mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-end max-w-5xl mx-auto mb-12">
             
             {/* RANK #2 (Left Podium) */}
             {top2 && (
-              <div className="order-2 md:order-1 flex flex-col items-center">
+              <div className="order-2 lg:order-1 flex flex-col items-center">
                 <div className="w-12 h-12 rounded-full bg-slate-400/10 border border-slate-400/40 flex items-center justify-center font-metadata font-bold text-slate-300 text-sm mb-3">
                   #2
                 </div>
@@ -108,13 +108,13 @@ export default function ClubsPage() {
 
             {/* RANK #1 (Center Podium - Taller and Glowing) */}
             {top1 && (
-              <div className="order-1 md:order-2 flex flex-col items-center">
+              <div className="order-1 lg:order-2 flex flex-col items-center">
                 <div className="w-14 h-14 rounded-full bg-electric-blue/15 border border-electric-blue/50 flex items-center justify-center font-metadata font-bold text-electric-blue text-lg mb-3 shadow-[0_0_20px_rgba(0,240,255,0.2)]">
                   #1
                 </div>
                 <GlassPanel
                   glowColor="cyan"
-                  className="w-full text-center p-8 border-electric-blue/35 bg-navy-dark/50 hover:border-electric-blue/50 md:-translate-y-4 shadow-xl"
+                  className="w-full text-center p-8 border-electric-blue/35 bg-navy-dark/50 hover:border-electric-blue/50 lg:-translate-y-4 shadow-xl"
                 >
                   <img
                     src={top1.logo}

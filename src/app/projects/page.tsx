@@ -88,7 +88,7 @@ export default function ProjectsPage() {
           </div>
 
           {/* Bottom row: advanced select lists */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Filter by Club */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Club</label>
@@ -158,7 +158,7 @@ export default function ProjectsPage() {
             </div>
 
             {/* Filter by Date */}
-            <div className="flex flex-col gap-1.5 col-span-2 md:col-span-1">
+            <div className="flex flex-col gap-1.5 col-span-1 sm:col-span-2 lg:col-span-1">
               <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Date Uploaded</label>
               <select
                 value={filters.date}

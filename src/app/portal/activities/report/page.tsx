@@ -315,7 +315,10 @@ export default function ReportActivityPage() {
                 <input type="number" {...register("cashContribution", { valueAsNumber: true })} className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none" placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">In-Kind Contribution Value</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">In-Kind Contribution Value</label>
+                  <span className="text-[9px] text-slate-500 font-metadata lowercase italic">Non-monetary donations like goods/services instead of cash</span>
+                </div>
                 <input type="number" {...register("inKindContribution", { valueAsNumber: true })} className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none" placeholder="0" />
               </div>
             </div>

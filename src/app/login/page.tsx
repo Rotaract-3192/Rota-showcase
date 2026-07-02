@@ -7,9 +7,11 @@ import WaveBackground from "@/components/WaveBackground";
 import GlassPanel from "@/components/GlassPanel";
 import { Waves, Mail, Lock, ArrowLeft, ArrowRight, UserPlus, Info, CheckCircle2, Phone, User } from "lucide-react";
 import { useStore } from "@/store/useStore";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, isLoading, error: authError } = useAuth();
   const [view, setView] = useState<"login" | "request">("login");
   const clubs = useStore((state) => state.clubs);
   
@@ -25,10 +27,9 @@ export default function LoginPage() {
   
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Navigate to dashboard
-    router.push("/portal/dashboard");
+    await login(email, password);
   };
 
   const handleRequestSubmit = (e: React.FormEvent) => {
@@ -119,12 +120,19 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {authError && (
+                <div className="text-red-500 text-[10px] font-bold text-center mt-2 font-metadata uppercase tracking-wider border border-red-500/20 bg-red-500/10 py-2 rounded-lg">
+                  {authError}
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 mt-4 rounded-xl bg-electric-blue hover:bg-ocean-glow text-navy-deep font-bold text-xs uppercase tracking-wider transition-all focus:outline-none active:scale-95"
+                disabled={isLoading}
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 mt-4 rounded-xl bg-electric-blue hover:bg-ocean-glow text-navy-deep font-bold text-xs uppercase tracking-wider transition-all focus:outline-none active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Enter Dashboard
+                {isLoading ? "Authenticating..." : "Enter Dashboard"}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>

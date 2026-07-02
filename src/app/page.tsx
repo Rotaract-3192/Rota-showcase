@@ -95,12 +95,12 @@ export default function HomePage() {
           </div>
 
           {/* High-Impact caslon display title */}
-          <h1 className="font-headline text-5xl md:text-7xl font-bold tracking-tight text-white leading-[1.15]">
+          <h1 className="font-headline text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.15]">
             ROTARACT DISTRICT 3192
           </h1>
 
           {/* Subtitle */}
-          <p className="font-body text-lg md:text-xl text-slate-300 max-w-2xl leading-relaxed">
+          <p className="font-body text-base md:text-xl text-slate-300 max-w-2xl leading-relaxed">
             Discover the projects, people, and ripples of impact creating positive,
             sustainable change across communities.
           </p>
@@ -125,7 +125,7 @@ export default function HomePage() {
         </div>
 
         {/* ================= HERO LIVE IMPACT METRICS ================= */}
-        <div className="w-full max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-4 mt-20 px-4 z-10">
+        <div className="w-full max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-20 px-4 z-10">
           <StatisticCard icon={Layers} value={stats.totalProjects} label="Projects Finished" suffix="+" />
           <StatisticCard icon={Users} value={stats.activeClubs} label="Active Clubs" />
           <StatisticCard icon={Award} value={stats.totalBeneficiaries} label="People Reached" suffix="+" />
@@ -171,7 +171,7 @@ export default function HomePage() {
       <section className="relative py-24 px-6 md:px-8 bg-navy-dark/90 border-y border-slate-800/40">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
           {/* Visual pitch */}
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-5 text-center lg:text-left">
             <span className="font-metadata text-xs font-bold text-electric-blue uppercase tracking-widest">
               Measure of our current
             </span>

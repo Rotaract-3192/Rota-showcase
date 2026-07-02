@@ -78,7 +78,7 @@ export default function LeaderboardPage() {
         </div>
 
         {/* ================= LEADERBOARD NAVIGATION TABS ================= */}
-        <div className="flex flex-wrap justify-center gap-3 mb-10">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-10">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -86,13 +86,13 @@ export default function LeaderboardPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-2.5 px-5 py-3.5 rounded-full border text-xs font-metadata font-bold tracking-wider uppercase transition-all duration-300 focus:outline-none ${
+                className={`inline-flex items-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-full border text-[10px] sm:text-xs font-metadata font-bold tracking-wider uppercase transition-all duration-300 focus:outline-none ${
                   isActive
                     ? "bg-gradient-to-r from-electric-blue/15 to-ocean-glow/15 border-electric-blue text-electric-blue shadow-[0_0_15px_rgba(0,240,255,0.08)]"
                     : "bg-navy-dark/30 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
                 }`}
               >
-                <TabIcon className="w-4 h-4" />
+                <TabIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>{tab.label}</span>
               </button>
             );
@@ -109,7 +109,7 @@ export default function LeaderboardPage() {
                 <span className="text-xs font-metadata text-slate-500">Sorted by Points</span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs font-metadata">
+                <table className="w-full text-left border-collapse text-xs font-metadata whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-slate-800/60 bg-navy-dark/10 text-slate-500 font-bold uppercase">
                       <th className="py-4 px-6 w-16 text-center">Rank</th>
@@ -177,7 +177,7 @@ export default function LeaderboardPage() {
                 <span className="text-xs font-metadata text-slate-500">Sorted by Hours</span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs font-metadata">
+                <table className="w-full text-left border-collapse text-xs font-metadata whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-slate-800/60 bg-navy-dark/10 text-slate-500 font-bold uppercase">
                       <th className="py-4 px-6 w-16 text-center">Rank</th>
@@ -223,7 +223,7 @@ export default function LeaderboardPage() {
                 <span className="text-xs font-metadata text-slate-500">Sorted by Reached</span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs font-metadata">
+                <table className="w-full text-left border-collapse text-xs font-metadata whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-slate-800/60 bg-navy-dark/10 text-slate-500 font-bold uppercase">
                       <th className="py-4 px-6 w-16 text-center">Rank</th>
@@ -269,7 +269,7 @@ export default function LeaderboardPage() {
                 <span className="text-xs font-metadata text-slate-500">Sorted by Impact Score</span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs font-metadata">
+                <table className="w-full text-left border-collapse text-xs font-metadata whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-slate-800/60 bg-navy-dark/10 text-slate-500 font-bold uppercase">
                       <th className="py-4 px-6 w-16 text-center">Rank</th>
