@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProjectDetailModal from "@/components/ProjectDetailModal";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 const libreCaslon = Libre_Caslon_Text({
   weight: ["400", "700"],
@@ -38,19 +39,21 @@ export default function RootLayout({
       className={`${libreCaslon.variable} ${dmSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-navy-deep text-slate-100 font-sans selection:bg-cyan-500/20 selection:text-electric-blue">
-        {/* Sticky Global Navigation */}
-        <Navbar />
-        
-        {/* Main Content Area */}
-        <main className="flex-grow pt-20">
-          {children}
-        </main>
-        
-        {/* Detail assessment overlay */}
-        <ProjectDetailModal />
-        
-        {/* Footer */}
-        <Footer />
+        <QueryProvider>
+          {/* Sticky Global Navigation */}
+          <Navbar />
+          
+          {/* Main Content Area */}
+          <main className="flex-grow pt-20">
+            {children}
+          </main>
+          
+          {/* Detail assessment overlay */}
+          <ProjectDetailModal />
+          
+          {/* Footer */}
+          <Footer />
+        </QueryProvider>
       </body>
     </html>
   );

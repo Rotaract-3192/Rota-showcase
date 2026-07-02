@@ -19,7 +19,7 @@ export class BaseRepository<T extends TableName> {
   async findById(id: string): Promise<Database['public']['Tables'][T]['Row'] | null> {
     try {
       const { data, error } = await supabase
-        .from(this.table)
+        .from(this.table as string)
         .select('*')
         .eq('id', id)
         .is('deleted_at', null)
@@ -40,7 +40,7 @@ export class BaseRepository<T extends TableName> {
   async findMany(options: QueryOptions = {}): Promise<PaginatedResponse<Database['public']['Tables'][T]['Row']>> {
     try {
       let query = supabase
-        .from(this.table)
+        .from(this.table as string)
         .select('*', { count: 'exact' })
         .is('deleted_at', null);
 
@@ -98,7 +98,7 @@ export class BaseRepository<T extends TableName> {
   async create(payload: Database['public']['Tables'][T]['Insert']): Promise<Database['public']['Tables'][T]['Row']> {
     try {
       const { data, error } = await supabase
-        .from(this.table)
+        .from(this.table as string)
         .insert(payload as any)
         .select()
         .single();
@@ -115,7 +115,7 @@ export class BaseRepository<T extends TableName> {
   async update(id: string, payload: Database['public']['Tables'][T]['Update']): Promise<Database['public']['Tables'][T]['Row']> {
     try {
       const { data, error } = await supabase
-        .from(this.table)
+        .from(this.table as string)
         .update(payload as any)
         .eq('id', id)
         .select()
@@ -133,7 +133,7 @@ export class BaseRepository<T extends TableName> {
   async softDelete(id: string): Promise<void> {
     try {
       const { error } = await supabase
-        .from(this.table)
+        .from(this.table as string)
         .update({ deleted_at: new Date().toISOString() } as any)
         .eq('id', id);
 

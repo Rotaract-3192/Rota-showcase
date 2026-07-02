@@ -85,6 +85,27 @@ export class AuthService {
       return null;
     }
   }
+
+  // Delegate standard CRUD operations to the underlying repository
+  async findById(id: string) {
+    return authRepository.findById(id);
+  }
+
+  async findMany(options: any = {}) {
+    return authRepository.findMany(options);
+  }
+
+  async create(payload: Database['public']['Tables']['member_profiles']['Insert']) {
+    return authRepository.create(payload);
+  }
+
+  async update(id: string, payload: Database['public']['Tables']['member_profiles']['Update']) {
+    return authRepository.update(id, payload);
+  }
+
+  async delete(id: string) {
+    return authRepository.softDelete(id);
+  }
 }
 
 // Ensure authRepository was scaffolded in Sprint 2.5

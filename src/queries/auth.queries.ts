@@ -19,7 +19,7 @@ export function useAuthList(options: QueryOptions = {}) {
 export function useAuth(id: string) {
   return useQuery({
     queryKey: authKeys.detail(id),
-    queryFn: () => authService.getById(id),
+    queryFn: () => authService.findById(id),
     enabled: !!id,
   });
 }

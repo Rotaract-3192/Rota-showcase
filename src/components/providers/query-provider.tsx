@@ -13,7 +13,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             staleTime: 60 * 1000, // 1 minute
             retry: (failureCount, error) => {
               // Don't retry on known database validation errors
-              if (error instanceof DatabaseError && error.status >= 400 && error.status < 500) {
+              if (error instanceof DatabaseError && error.code && error.code.startsWith('23')) {
                 return false;
               }
               return failureCount < 3;
