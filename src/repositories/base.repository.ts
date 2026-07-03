@@ -18,15 +18,15 @@ export class BaseRepository<T extends TableName> {
   /** Fetch a single record by ID */
   async findById(id: string): Promise<Database['public']['Tables'][T]['Row'] | null> {
     try {
-      const { data, error } = await supabase
-        .from(this.table as string)
-        .select('*')
+      const { data, error } = await (supabase
+        .from(this.table)
+        .select('*') as any)
         .eq('id', id)
         .is('deleted_at', null)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      return (data as Database['public']['Tables'][T]['Row']) || null;
+      return data ? (data as Database['public']['Tables'][T]['Row']) : null;
     } catch (err) {
       handleSupabaseError(err, `${this.table}.findById`);
       return null; // Will not reach here due to throw in handleSupabaseError
@@ -40,7 +40,7 @@ export class BaseRepository<T extends TableName> {
   async findMany(options: QueryOptions = {}): Promise<PaginatedResponse<Database['public']['Tables'][T]['Row']>> {
     try {
       let query = supabase
-        .from(this.table as string)
+        .from(this.table)
         .select('*', { count: 'exact' })
         .is('deleted_at', null);
 
@@ -48,7 +48,7 @@ export class BaseRepository<T extends TableName> {
       if (options.filters) {
         Object.entries(options.filters).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
-            query = query.eq(key, value);
+            query = (query as any).eq(key, value);
           }
         });
       }
@@ -82,7 +82,7 @@ export class BaseRepository<T extends TableName> {
       if (error) throw error;
 
       return {
-        data: data as Database['public']['Tables'][T]['Row'][],
+        data: data as any as Database['public']['Tables'][T]['Row'][],
         count: count || 0,
         page,
         pageSize,
@@ -98,13 +98,13 @@ export class BaseRepository<T extends TableName> {
   async create(payload: Database['public']['Tables'][T]['Insert']): Promise<Database['public']['Tables'][T]['Row']> {
     try {
       const { data, error } = await supabase
-        .from(this.table as string)
+        .from(this.table)
         .insert(payload as any)
         .select()
         .single();
 
       if (error) throw error;
-      return data as Database['public']['Tables'][T]['Row'];
+      return data as any as Database['public']['Tables'][T]['Row'];
     } catch (err) {
       handleSupabaseError(err, `${this.table}.create`);
       throw err;
@@ -114,15 +114,15 @@ export class BaseRepository<T extends TableName> {
   /** Update an existing record */
   async update(id: string, payload: Database['public']['Tables'][T]['Update']): Promise<Database['public']['Tables'][T]['Row']> {
     try {
-      const { data, error } = await supabase
-        .from(this.table as string)
-        .update(payload as any)
+      const { data, error } = await (supabase
+        .from(this.table)
+        .update(payload as any) as any)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      return data as Database['public']['Tables'][T]['Row'];
+      return data as any as Database['public']['Tables'][T]['Row'];
     } catch (err) {
       handleSupabaseError(err, `${this.table}.update`);
       throw err;
@@ -132,9 +132,9 @@ export class BaseRepository<T extends TableName> {
   /** Soft delete a record */
   async softDelete(id: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from(this.table as string)
-        .update({ deleted_at: new Date().toISOString() } as any)
+      const { error } = await (supabase
+        .from(this.table)
+        .update({ deleted_at: new Date().toISOString() } as any) as any)
         .eq('id', id);
 
       if (error) throw error;

@@ -282,6 +282,10 @@ CREATE TABLE IF NOT EXISTS cron_jobs (
 DROP TRIGGER IF EXISTS set_cron_jobs_updated_at ON cron_jobs;
 CREATE TRIGGER set_cron_jobs_updated_at BEFORE UPDATE ON cron_jobs FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+-- Ensure deleted_at exists for view creation fallback
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE point_ledgers ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
 -- Materialized View: leaderboard_rankings
 DROP MATERIALIZED VIEW IF EXISTS leaderboard_rankings;
 CREATE MATERIALIZED VIEW leaderboard_rankings AS
@@ -292,7 +296,7 @@ SELECT
 FROM 
     clubs c
 LEFT JOIN 
-    point_ledgers p ON c.id = p.club_id AND p.deleted_at IS NULL
+    point_ledgers p ON c.id::text = p.club_id::text AND p.deleted_at IS NULL
 WHERE 
     c.deleted_at IS NULL
 GROUP BY 
