@@ -8,7 +8,7 @@ import StatisticCard from "@/components/StatisticCard";
 import ProjectCard from "@/components/ProjectCard";
 import { useStore, selectFilteredProjects } from "@/store/useStore";
 import { useShallow } from "zustand/react/shallow";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, type Variants } from "framer-motion";
 import {
   ArrowRight,
   Sparkles,
@@ -79,7 +79,7 @@ export default function HomePage() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 80, damping: 20 } }
   };

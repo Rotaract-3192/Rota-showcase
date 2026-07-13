@@ -1,36 +1,30 @@
-import { NextResponse } from 'next/server';
-import { generateSupabaseJWT } from '@/lib/jwt';
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-  try {
-    // Generate valid service_role JWT
-    const bearerToken = await generateSupabaseJWT('service_role');
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("id,name")
+    .is("deleted_at", null)
+    .order("name");
 
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/clubs?select=id,name&deleted_at=is.null&order=name`,
+  if (error) {
+    console.error("Supabase clubs fetch failed:", error);
+
+    return NextResponse.json(
       {
-        headers: {
-          'apikey': apiKey,
-          'Authorization': `Bearer ${bearerToken}`,
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
+        error: error.message,
+      },
+      {
+        status: 500,
       }
     );
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('Supabase clubs fetch failed:', res.status, text);
-      return NextResponse.json({ error: 'Failed to fetch clubs', details: text }, { status: 500 });
-    }
-
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (err: any) {
-    console.error('API /api/clubs error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
   }
+
+  return NextResponse.json(data);
 }

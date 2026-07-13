@@ -5,12 +5,10 @@ const isProtectedRoute = createRouteMatcher([
   '/admin(.*)'
 ]);
 
-const BASE_PATH = '/rotaract-district-portal';
-
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     await auth.protect({
-      unauthenticatedUrl: `${req.nextUrl.origin}${BASE_PATH}/sign-in`,
+      unauthenticatedUrl: `${req.nextUrl.origin}/sign-in`,
     });
   }
 });
