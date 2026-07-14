@@ -7,9 +7,10 @@ export default function SyncRedirect({ targetUrl }: { targetUrl: string }) {
   const router = useRouter();
 
   useEffect(() => {
-    // We use router.replace to avoid adding /sync to browser history
-    router.replace(targetUrl);
-  }, [router, targetUrl]);
+    // We use a hard window location replace to ensure reliable navigation and bypass any Next.js router state issues
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    window.location.replace(basePath + targetUrl);
+  }, [targetUrl]);
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-navy-deep">

@@ -16,6 +16,11 @@ interface AccessRequest {
   requestedRole: string;
   submissionDate: string;
   status: string;
+  verifiedLeader?: {
+    name: string;
+    designation: string;
+    club_name: string;
+  } | null;
 }
 
 export default function AdminAccessRequestsPage() {
@@ -42,7 +47,8 @@ export default function AdminAccessRequestsPage() {
             clubId: r.club_id,
             requestedRole: r.requested_role,
             submissionDate: r.created_at,
-            status: r.status
+            status: r.status,
+            verifiedLeader: r.verifiedLeader
           }));
           setRequests(mapped);
         }
@@ -115,9 +121,22 @@ export default function AdminAccessRequestsPage() {
           {
             header: "Officer Info",
             cell: (req) => (
-              <div className="flex flex-col">
-                <span className="font-bold text-white leading-snug">{req.name}</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-white leading-snug">{req.name}</span>
+                  {req.verifiedLeader && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/35 text-[9px] text-emerald-400 font-bold uppercase tracking-wider font-metadata" title={`Verified Leader Directory: ${req.verifiedLeader.designation} at ${req.verifiedLeader.club_name}`}>
+                      <UserCheck className="w-2.5 h-2.5 text-emerald-400" />
+                      Verified Leader
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] text-slate-500 font-metadata">{req.email}</span>
+                {req.verifiedLeader && (
+                  <span className="text-[9px] text-emerald-400/80 font-metadata italic">
+                    Directory Match: {req.verifiedLeader.designation} ({req.verifiedLeader.club_name})
+                  </span>
+                )}
               </div>
             )
           },

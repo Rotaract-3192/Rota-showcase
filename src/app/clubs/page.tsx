@@ -27,17 +27,21 @@ export default function ClubsPage() {
     return b.totalProjects - a.totalProjects;
   });
 
-  // Extract Podium (Top 3) and remaining rankings
+  // Extract Podium (Top 3)
   const top1 = leaderboardSorted[0];
   const top2 = leaderboardSorted[1];
   const top3 = leaderboardSorted[2];
-  const remainingRankings = leaderboardSorted.slice(3, 10);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilter("search", e.target.value);
   };
 
   const zones = ["Zone 1", "Zone 2", "Zone 3"];
+  
+  const getPresidentName = (leaders: { designation: string; name: string }[]) => {
+    const pres = leaders.find(l => l.designation.toLowerCase().includes("president"));
+    return pres ? pres.name : "N/A";
+  };
 
   return (
     <div className="relative min-h-screen pb-24 px-6 md:px-8">
@@ -90,17 +94,11 @@ export default function ClubsPage() {
                     {top2.name}
                   </h3>
                   <p className="text-[10px] font-metadata text-slate-400 mt-1 uppercase font-bold tracking-wider">
-                    {top2.president}
+                    {getPresidentName(top2.leaders)}
                   </p>
-                  <div className="mt-4 pt-3 border-t border-slate-800/40 grid grid-cols-2 text-xs font-metadata">
-                    <div>
-                      <p className="text-[9px] text-slate-500 font-bold uppercase">Projects</p>
-                      <p className="text-white font-bold">{top2.totalProjects}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] text-slate-500 font-bold uppercase">Points</p>
-                      <p className="text-slate-300 font-bold">{top2.totalPoints.toLocaleString()}</p>
-                    </div>
+                  <div className="mt-4 pt-3 border-t border-slate-800/40 text-center text-xs font-metadata">
+                    <p className="text-[9px] text-slate-500 font-bold uppercase">Projects Completed</p>
+                    <p className="text-white font-bold text-sm">{top2.totalProjects}</p>
                   </div>
                 </GlassPanel>
               </div>
@@ -125,17 +123,11 @@ export default function ClubsPage() {
                     {top1.name}
                   </h3>
                   <p className="text-[10px] font-metadata text-electric-blue mt-1 uppercase font-bold tracking-wider">
-                    {top1.president}
+                    {getPresidentName(top1.leaders)}
                   </p>
-                  <div className="mt-5 pt-4 border-t border-slate-800/40 grid grid-cols-2 text-xs font-metadata">
-                    <div>
-                      <p className="text-[9px] text-slate-500 font-bold uppercase">Projects</p>
-                      <p className="text-white font-bold text-sm">{top1.totalProjects}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] text-slate-500 font-bold uppercase">Points</p>
-                      <p className="text-electric-blue font-bold text-sm">{top1.totalPoints.toLocaleString()}</p>
-                    </div>
+                  <div className="mt-5 pt-4 border-t border-slate-800/40 text-center text-xs font-metadata">
+                    <p className="text-[9px] text-slate-500 font-bold uppercase">Projects Completed</p>
+                    <p className="text-electric-blue font-bold text-sm">{top1.totalProjects}</p>
                   </div>
                 </GlassPanel>
               </div>
@@ -160,77 +152,16 @@ export default function ClubsPage() {
                     {top3.name}
                   </h3>
                   <p className="text-[10px] font-metadata text-slate-400 mt-1 uppercase font-bold tracking-wider">
-                    {top3.president}
+                    {getPresidentName(top3.leaders)}
                   </p>
-                  <div className="mt-4 pt-3 border-t border-slate-800/40 grid grid-cols-2 text-xs font-metadata">
-                    <div>
-                      <p className="text-[9px] text-slate-500 font-bold uppercase">Projects</p>
-                      <p className="text-white font-bold">{top3.totalProjects}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] text-slate-500 font-bold uppercase">Points</p>
-                      <p className="text-slate-300 font-bold">{top3.totalPoints.toLocaleString()}</p>
-                    </div>
+                  <div className="mt-4 pt-3 border-t border-slate-800/40 text-center text-xs font-metadata">
+                    <p className="text-[9px] text-slate-500 font-bold uppercase">Projects Completed</p>
+                    <p className="text-white font-bold text-sm">{top3.totalProjects}</p>
                   </div>
                 </GlassPanel>
               </div>
             )}
 
-          </div>
-
-          {/* 2. TOP 10 LIST LAYOUT (Ranks 4-10) */}
-          <div className="max-w-4xl mx-auto">
-            <GlassPanel className="p-0 border-slate-800/60 overflow-hidden bg-navy-dark/20">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs font-metadata">
-                  <thead>
-                    <tr className="border-b border-slate-800/60 bg-navy-dark/50 text-slate-500 font-bold uppercase tracking-wider">
-                      <th className="py-4 px-6 w-16 text-center">Rank</th>
-                      <th className="py-4 px-6">Club Name</th>
-                      <th className="py-4 px-6">Zone</th>
-                      <th className="py-4 px-6 text-center">Projects</th>
-                      <th className="py-4 px-6 text-right">Total Points</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/40 text-slate-300">
-                    {remainingRankings.map((club, index) => {
-                      const rankNum = index + 4;
-                      return (
-                        <tr key={club.id} className="hover:bg-navy-light/20 transition-colors">
-                          <td className="py-4 px-6 text-center font-bold text-slate-400">
-                            {rankNum}
-                          </td>
-                          <td className="py-4 px-6 flex items-center gap-3">
-                            <img
-                              src={club.logo}
-                              alt={club.name}
-                              className="w-7 h-7 rounded-full object-cover border border-slate-700"
-                            />
-                            <div>
-                              <p className="font-headline font-bold text-white text-sm">
-                                {club.name}
-                              </p>
-                              <p className="text-[10px] text-slate-500 mt-0.5">
-                                Pres: {club.president}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="py-4 px-6 text-slate-400">
-                            {club.zone}
-                          </td>
-                          <td className="py-4 px-6 text-center font-bold text-white">
-                            {club.totalProjects}
-                          </td>
-                          <td className="py-4 px-6 text-right font-black text-electric-blue">
-                            {club.totalPoints.toLocaleString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </GlassPanel>
           </div>
         </section>
 

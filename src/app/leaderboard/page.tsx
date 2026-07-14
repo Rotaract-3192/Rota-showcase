@@ -34,7 +34,7 @@ export default function LeaderboardPage() {
       return b.totalPoints - a.totalPoints;
     }
     return b.totalProjects - a.totalProjects;
-  });
+  }).slice(0, 3);
 
   const topProjects = [...projects].sort((a, b) => {
     if (b.impactScore !== a.impactScore) {
@@ -106,7 +106,7 @@ export default function LeaderboardPage() {
             <GlassPanel className="p-0 border-slate-800/60 overflow-hidden bg-navy-dark/20 animate-fade-in">
               <div className="p-6 border-b border-slate-800/40 bg-navy-dark/30 flex items-center justify-between">
                 <h2 className="font-headline text-xl font-bold text-white">Top Performing Clubs</h2>
-                <span className="text-xs font-metadata text-slate-500">Sorted by Points</span>
+                <span className="text-xs font-metadata text-slate-500">Sorted by Rank</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs font-metadata whitespace-nowrap">
@@ -115,8 +115,7 @@ export default function LeaderboardPage() {
                       <th className="py-4 px-6 w-16 text-center">Rank</th>
                       <th className="py-4 px-6">Club Name</th>
                       <th className="py-4 px-6">Zone</th>
-                      <th className="py-4 px-6 text-center">Projects</th>
-                      <th className="py-4 px-6 text-right">Points</th>
+                      <th className="py-4 px-6 text-right">Projects Completed</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/40 text-slate-300">
@@ -135,17 +134,16 @@ export default function LeaderboardPage() {
                             <p className="font-headline font-bold text-white text-sm">
                               {club.name}
                             </p>
-                            <p className="text-[10px] text-slate-500">
-                              President: {club.president}
-                            </p>
+                            <div className="flex flex-col text-[10px] text-slate-500 font-metadata mt-1 uppercase font-bold tracking-wider">
+                            {club.leaders.slice(0, 2).map((l, i) => (
+                              <span key={i}>{l.designation}: {l.name}</span>
+                            ))}
+                          </div>
                           </div>
                         </td>
                         <td className="py-4 px-6 text-slate-400">{club.zone}</td>
-                        <td className="py-4 px-6 text-center font-bold text-white">
-                          {club.totalProjects}
-                        </td>
-                        <td className="py-4 px-6 text-right font-black text-electric-blue">
-                          {club.totalPoints.toLocaleString()}
+                        <td className="py-4 px-6 text-right font-bold text-white">
+                          {club.totalProjects} Projects
                         </td>
                       </tr>
                     ))}

@@ -81,7 +81,7 @@ export default function HomePage() {
 
   const itemVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 80, damping: 20 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 80, damping: 20 } }
   };
 
   const avenues = [
@@ -160,7 +160,7 @@ export default function HomePage() {
           </motion.div>
 
           {/* High-Impact caslon display title with text-glow */}
-          <motion.h1 variants={itemVariants} className="font-headline text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 leading-[1.1] filter drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+          <motion.h1 variants={itemVariants} className="font-headline text-4xl sm:text-7xl md:text-8xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 leading-[1.1] filter drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
             ROTARACT<br/>DISTRICT 3192
           </motion.h1>
 
@@ -199,7 +199,7 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.5 }}><StatisticCard icon={Users} value={stats.activeClubs} label="Active Clubs" /></motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.5 }}><StatisticCard icon={Award} value={stats.totalBeneficiaries} label="People Reached" suffix="+" /></motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.5 }}><StatisticCard icon={Clock} value={stats.volunteerHours} label="Vol. Hours" suffix=" hrs" /></motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0, duration: 0.5 }}><StatisticCard icon={Coins} value={stats.contributions} label="Contributions" prefix="₹" suffix="+" /></motion.div>
+          <motion.div className="col-span-2 sm:col-span-1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0, duration: 0.5 }}><StatisticCard icon={Coins} value={stats.contributions} label="Contributions" prefix="₹" suffix="+" /></motion.div>
         </motion.div>
         
         {/* Subtle Scroll Indicator */}

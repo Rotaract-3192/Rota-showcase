@@ -39,10 +39,10 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      signInFallbackRedirectUrl="/sync"
-      signUpFallbackRedirectUrl="/sync"
+      signInUrl={`${BASE}/sign-in`}
+      signUpUrl={`${BASE}/sign-up`}
+      signInFallbackRedirectUrl={`${BASE}/sync`}
+      signUpFallbackRedirectUrl={`${BASE}/sync`}
     >
       <html
         lang="en"

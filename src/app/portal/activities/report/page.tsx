@@ -15,20 +15,20 @@ const reportSchema = z.object({
   venue: z.string().min(2, "Venue is required."),
   description: z.string().min(20, "Description must be at least 20 characters."),
   startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().min(1, "End date is required"),
+  endDate: z.string().optional(),
   sameAsStart: z.boolean().optional(),
   activityType: z.enum(["Standalone", "Collaborative"]),
   externalNGO: z.boolean().optional(),
   organizationName: z.string().optional(),
   avenues: z.array(z.string()).min(1, "Select at least one avenue."),
-  focusAreas: z.array(z.string()).min(1, "Select at least one focus area."),
-  activityExpenses: z.number().min(0).optional(),
-  cashContribution: z.number().min(0).optional(),
-  inKindContribution: z.number().min(0).optional(),
-  participants: z.number().min(1, "Participants must be at least 1"),
-  beneficiaries: z.number().min(0),
-  volunteers: z.number().min(1),
-  volunteerHours: z.number().min(1),
+  focusAreas: z.array(z.string()).optional(),
+  activityExpenses: z.coerce.number().min(0).optional(),
+  cashContribution: z.coerce.number().min(0).optional(),
+  inKindContribution: z.coerce.number().min(0).optional(),
+  participants: z.coerce.number().min(1, "Participants must be at least 1"),
+  beneficiaries: z.coerce.number().min(0),
+  volunteers: z.coerce.number().min(1, "Volunteers must be at least 1"),
+  volunteerHours: z.coerce.number().min(1, "Hours must be at least 1"),
   submitForPublication: z.boolean().optional(),
   featureActivity: z.boolean().optional(),
 });
@@ -58,6 +58,7 @@ export default function ReportActivityPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { club } = useProfile();
   const { mutateAsync: createActivity, isPending } = useCreateActivity();
 
@@ -69,7 +70,7 @@ export default function ReportActivityPage() {
     trigger,
     formState: { errors },
   } = useForm<ReportFormValues>({
-    resolver: zodResolver(reportSchema),
+    resolver: zodResolver(reportSchema) as any,
     defaultValues: {
       avenues: [],
       focusAreas: [],
@@ -78,6 +79,9 @@ export default function ReportActivityPage() {
       externalNGO: false,
       submitForPublication: false,
       featureActivity: false,
+      activityExpenses: 0,
+      cashContribution: 0,
+      inKindContribution: 0,
     },
   });
 
@@ -119,7 +123,7 @@ export default function ReportActivityPage() {
         is_external_ngo: data.externalNGO || false,
         organization_name: data.organizationName || null,
         avenues: data.avenues,
-        focus_areas: data.focusAreas,
+        focus_areas: data.focusAreas || [],
         activity_expenses: data.activityExpenses || 0,
         cash_contribution: data.cashContribution || 0,
         in_kind_contribution: data.inKindContribution || 0,
@@ -130,7 +134,7 @@ export default function ReportActivityPage() {
         submit_for_publication: data.submitForPublication || false,
         feature_activity: data.featureActivity || false,
         start_date: new Date(data.startDate).toISOString(),
-        end_date: new Date(data.endDate).toISOString(),
+        end_date: new Date(data.sameAsStart ? data.startDate : (data.endDate || data.startDate)).toISOString(),
         location: data.venue,
       };
 
@@ -139,6 +143,11 @@ export default function ReportActivityPage() {
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to submit activity");
     }
+  };
+
+  const onInvalid = (errors: any) => {
+    console.error("Form Validation Errors:", errors);
+    setErrorMsg("Validation failed on one or more steps. Please go back and check your inputs.");
   };
 
   if (isSubmitted) {
@@ -204,7 +213,7 @@ export default function ReportActivityPage() {
       </div>
 
       {/* Form Container */}
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-navy-dark/40 border border-slate-800/60 p-6 md:p-8 rounded-2xl flex flex-col gap-6">
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="bg-navy-dark/40 border border-slate-800/60 p-6 md:p-8 rounded-2xl flex flex-col gap-6">
         
         {/* STEP 1: Basic Info */}
         <div className={currentStep === 1 ? "block" : "hidden"}>
@@ -328,7 +337,7 @@ export default function ReportActivityPage() {
             </div>
 
             <div className="flex flex-col gap-3">
-              <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Area of Focus * (Select all that apply)</label>
+              <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Area of Focus (Select all that apply)</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {focusList.map(foc => (
                   <label key={foc} className="flex items-center gap-3 p-3 rounded-xl border border-slate-800/80 bg-navy-deep/40 hover:bg-navy-dark transition-colors cursor-pointer text-sm text-slate-300">
@@ -405,11 +414,23 @@ export default function ReportActivityPage() {
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Upload Photos</label>
-              <div className="border-2 border-dashed border-slate-700/80 rounded-2xl p-12 flex flex-col items-center justify-center bg-navy-deep/30 hover:bg-navy-deep/50 transition-colors cursor-pointer group">
+              <label className="border-2 border-dashed border-slate-700/80 rounded-2xl p-12 flex flex-col items-center justify-center bg-navy-deep/30 hover:bg-navy-deep/50 transition-colors cursor-pointer group relative">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      setSelectedFile(e.target.files[0]);
+                    }
+                  }} 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                />
                 <UploadCloud className="w-10 h-10 text-slate-500 group-hover:text-electric-blue mb-4 transition-colors" />
-                <p className="text-sm text-slate-300 font-bold">Click to upload or drag and drop</p>
+                <p className="text-sm text-slate-300 font-bold">
+                  {selectedFile ? selectedFile.name : "Click to upload or drag and drop"}
+                </p>
                 <p className="text-xs text-slate-500 mt-1 font-body">SVG, PNG, JPG or GIF (max. 800x400px)</p>
-              </div>
+              </label>
             </div>
 
             <div className="flex flex-col gap-4 p-5 rounded-xl bg-navy-deep/50 border border-slate-800/60">

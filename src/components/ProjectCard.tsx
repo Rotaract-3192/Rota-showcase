@@ -44,10 +44,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           {project.avenueOfService}
         </span>
 
-        {/* Impact Score Bubble */}
-        <div className="absolute top-4 right-4 flex items-center justify-center w-10 h-10 rounded-full bg-navy-dark/95 border border-ocean-glow/30 text-ocean-glow shadow-lg shadow-ocean-glow/10 font-metadata text-xs font-bold">
-          {project.impactScore}
-        </div>
       </div>
 
       {/* Card Body */}

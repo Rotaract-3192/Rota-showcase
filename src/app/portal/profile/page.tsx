@@ -38,17 +38,21 @@ export default function ProfilePage() {
       setErrorMsg("");
       setSuccessMsg("");
 
-      const { error } = await supabase
-        .from("member_profiles")
-        .update({
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           first_name: firstName,
           last_name: lastName,
           phone: phone,
           blood_group: bloodGroup
-        })
-        .eq("id", profile.id);
+        }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
 
       await refreshProfile();
       setSuccessMsg("Profile updated successfully!");

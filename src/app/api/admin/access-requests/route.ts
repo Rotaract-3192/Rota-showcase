@@ -35,6 +35,41 @@ export async function GET() {
     const requests = await supabaseFetch(
       '/access_requests?status=eq.PENDING&deleted_at=is.null&select=id,full_name,email,phone,requested_role,created_at,status,club_id,clubs(name)'
     );
+
+    if (Array.isArray(requests) && requests.length > 0) {
+      const emails = requests.map((r: any) => r.email.toLowerCase().trim()).filter(Boolean);
+      
+      if (emails.length > 0) {
+        // Query the directory for matching emails
+        const queryEmails = emails.map((e: string) => encodeURIComponent(e)).join(',');
+        const matchedLeaders = await supabaseFetch(
+          `/club_leaders_directory?email=in.(${queryEmails})&select=*`
+        );
+
+        const matchedMap = new Map();
+        if (Array.isArray(matchedLeaders)) {
+          matchedLeaders.forEach((leader: any) => {
+            matchedMap.set(leader.email.toLowerCase().trim(), leader);
+          });
+        }
+
+        // Merge matching leaders into request objects
+        const enhancedRequests = requests.map((r: any) => {
+          const match = matchedMap.get(r.email.toLowerCase().trim());
+          return {
+            ...r,
+            verifiedLeader: match ? {
+              name: match.name,
+              designation: match.designation,
+              club_name: match.club_name
+            } : null
+          };
+        });
+
+        return NextResponse.json(enhancedRequests);
+      }
+    }
+
     return NextResponse.json(requests);
   } catch (err: any) {
     console.error('GET /api/admin/access-requests error:', err);

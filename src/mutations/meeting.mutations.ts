@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { meetingService } from '@/services/meeting.service';
+import { createMeetingAction, updateMeetingAction, deleteMeetingAction } from '@/actions/meeting.actions';
 import { meetingKeys } from '@/queries/meeting.queries';
 import type { Database } from '@/types/database.types';
 
@@ -8,7 +8,7 @@ export function useCreateMeeting() {
 
   return useMutation({
     mutationFn: (payload: Database['public']['Tables']['meetings']['Insert']) => 
-      meetingService.create(payload),
+      createMeetingAction(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: meetingKeys.lists() });
     },
@@ -20,7 +20,7 @@ export function useUpdateMeeting() {
 
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Database['public']['Tables']['meetings']['Update'] }) => 
-      meetingService.update(id, payload),
+      updateMeetingAction(id, payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: meetingKeys.detail(data.id) });
       queryClient.invalidateQueries({ queryKey: meetingKeys.lists() });
@@ -32,7 +32,7 @@ export function useDeleteMeeting() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => meetingService.delete(id),
+    mutationFn: (id: string) => deleteMeetingAction(id),
     onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: meetingKeys.detail(deletedId) });
       queryClient.invalidateQueries({ queryKey: meetingKeys.lists() });

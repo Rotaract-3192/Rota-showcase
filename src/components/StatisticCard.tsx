@@ -77,27 +77,27 @@ export default function StatisticCard({
       <GlassPanel
         hoverEffect
         glowColor="blue"
-        className={cn("flex items-center gap-5 p-6 min-w-[200px]", className)}
+        className={cn("flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 md:gap-5 p-3 sm:p-4 md:p-6 min-w-0 w-full", className)}
       >
         {/* Icon boundary container */}
         <div
           className={cn(
-            "flex items-center justify-center w-12 h-12 rounded-xl bg-electric-blue/5 border border-electric-blue/15 text-electric-blue shadow-sm shadow-electric-blue/5",
+            "flex shrink-0 items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl bg-electric-blue/5 border border-electric-blue/15 text-electric-blue shadow-sm shadow-electric-blue/5",
             iconClassName
           )}
         >
-          <Icon className="w-6 h-6" />
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
         </div>
   
         {/* Numerical Data Column */}
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-slate-500 font-metadata font-bold uppercase tracking-wider">
+        <div className="flex flex-col gap-0.5 min-w-0 w-full">
+          <span className="text-[9px] sm:text-[10px] text-slate-500 font-metadata font-bold uppercase tracking-wider leading-tight">
             {label}
           </span>
-          <h3 className="font-metadata text-2xl font-black text-white tracking-tight flex items-baseline">
-            {prefix && <span className="text-sm font-bold text-slate-400 mr-0.5">{prefix}</span>}
+          <h3 className="font-metadata text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight flex items-baseline flex-wrap">
+            {prefix && <span className="text-xs sm:text-sm font-bold text-slate-400 mr-0.5">{prefix}</span>}
             <span>{count.toLocaleString()}</span>
-            {suffix && <span className="text-electric-blue text-sm font-bold ml-0.5">{suffix}</span>}
+            {suffix && <span className="text-electric-blue text-xs sm:text-sm font-bold ml-0.5">{suffix}</span>}
           </h3>
         </div>
       </GlassPanel>

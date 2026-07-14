@@ -4,8 +4,11 @@ import React, { useState, useEffect } from "react";
 import { Bell, Lock, PaintBucket, X, Check, Loader2, KeyRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import GlassPanel from "@/components/GlassPanel";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function SettingsPage() {
+  const { profile, primaryRole, club, refreshProfile } = useProfile();
+  
   // Password Reset State
   const [isChangingPass, setIsChangingPass] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -28,6 +31,46 @@ export default function SettingsPage() {
       setIs2FAEnabled(true);
     }
   }, []);
+
+  const isLeader = ["President", "Vice President", "Secretary"].includes(primaryRole || "");
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState("");
+  const [logoUploadSuccess, setLogoUploadSuccess] = useState("");
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !club) return;
+    const file = e.target.files[0];
+    
+    try {
+      setIsUploadingLogo(true);
+      setLogoUploadError("");
+      setLogoUploadSuccess("");
+
+      const formData = new FormData();
+      formData.append('logo', file);
+      formData.append('clubId', club.id);
+
+      const res = await fetch('/api/clubs/logo', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to upload club logo.');
+      }
+
+      setLogoUploadSuccess("Club logo updated successfully!");
+      refreshProfile(); // refresh to get new club data
+      setTimeout(() => setLogoUploadSuccess(""), 3000);
+    } catch (err: any) {
+      setLogoUploadError(err.message || "Failed to upload club logo.");
+    } finally {
+      setIsUploadingLogo(false);
+      // clear the input
+      e.target.value = "";
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,6 +182,50 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {/* Club Settings (Visible to Leaders only) */}
+        {isLeader && club && (
+          <section className="bg-navy-dark/40 border border-slate-800/60 p-6 md:p-8 rounded-2xl flex flex-col gap-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-800/60">
+              <div className="p-2 rounded-lg bg-navy-deep border border-slate-700/60">
+                <PaintBucket className="w-4 h-4 text-pink-500" />
+              </div>
+              <h2 className="font-headline text-xl font-bold text-white">Club Settings</h2>
+            </div>
+            
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-white">Club Logo</p>
+                  <p className="text-xs text-slate-400 mt-1">Update the logo for {club.name}</p>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  {club.logo_url && (
+                    <img src={club.logo_url} alt="Club Logo" className="w-10 h-10 rounded-full object-cover border border-slate-700" />
+                  )}
+                  
+                  <label className="px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs font-bold transition-colors cursor-pointer relative overflow-hidden flex items-center gap-2">
+                    {isUploadingLogo ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</>
+                    ) : (
+                      "Upload New Logo"
+                    )}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                      onChange={handleLogoUpload}
+                      disabled={isUploadingLogo}
+                    />
+                  </label>
+                </div>
+              </div>
+              {logoUploadError && <p className="text-xs text-red-400 font-bold">{logoUploadError}</p>}
+              {logoUploadSuccess && <p className="text-xs text-emerald-400 font-bold">{logoUploadSuccess}</p>}
+            </div>
+          </section>
+        )}
 
         {/* Notification Settings */}
         <section className="bg-navy-dark/40 border border-slate-800/60 p-6 md:p-8 rounded-2xl flex flex-col gap-6">

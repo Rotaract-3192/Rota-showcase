@@ -48,11 +48,15 @@ export default function ClubCard({ club, rank }: ClubCardProps) {
           </div>
         </div>
 
-        {/* President Info */}
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-navy-dark/40 border border-slate-800/60 font-body text-xs text-slate-300">
-          <User className="w-3.5 h-3.5 text-ocean-glow" />
-          <span className="text-slate-500 mr-1">President:</span>
-          <span className="font-semibold text-white">{club.president}</span>
+        {/* Leaders Info */}
+        <div className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl bg-navy-dark/40 border border-slate-800/60 font-body text-xs text-slate-300">
+          {club.leaders.slice(0, 3).map((leader, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <User className="w-3.5 h-3.5 text-ocean-glow shrink-0" />
+              <span className="text-slate-500 mr-1 min-w-[70px]">{leader.designation}:</span>
+              <span className="font-semibold text-white truncate">{leader.name}</span>
+            </div>
+          ))}
         </div>
 
         {/* Description Snippet */}
@@ -62,26 +66,14 @@ export default function ClubCard({ club, rank }: ClubCardProps) {
       </div>
 
       {/* Metric details */}
-      <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-800/40 text-xs font-metadata">
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-1.5 text-slate-500">
-            <Briefcase className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-[10px] uppercase font-bold">Projects</span>
-          </div>
-          <span className="text-sm font-bold text-white mt-0.5">
-            {club.totalProjects} Completed
-          </span>
+      <div className="mt-6 pt-5 border-t border-slate-800/40 text-xs font-metadata flex items-center justify-between">
+        <div className="flex items-center gap-2 text-slate-500">
+          <Briefcase className="w-4 h-4 text-electric-blue" />
+          <span className="text-[10px] uppercase font-bold tracking-wider">Projects Completed</span>
         </div>
-
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-1.5 text-slate-500">
-            <Award className="w-3.5 h-3.5 text-ocean-glow" />
-            <span className="text-[10px] uppercase font-bold">Points</span>
-          </div>
-          <span className="text-sm font-bold text-electric-blue mt-0.5">
-            {club.totalPoints.toLocaleString()} Pts
-          </span>
-        </div>
+        <span className="text-sm font-bold text-white">
+          {club.totalProjects} Projects
+        </span>
       </div>
     </GlassPanel>
   );

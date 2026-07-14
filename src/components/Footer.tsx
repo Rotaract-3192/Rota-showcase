@@ -76,11 +76,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/district" className="hover:text-electric-blue transition-colors">
-                  District Directory
-                </Link>
-              </li>
-              <li>
                 <Link href="/leaderboard" className="hover:text-electric-blue transition-colors">
                   District Leaderboard
                 </Link>

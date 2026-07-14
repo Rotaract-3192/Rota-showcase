@@ -32,7 +32,6 @@ export default function Sidebar() {
   ];
 
   const bottomItems = [
-    { name: "Profile", href: "/portal/profile", icon: Users },
     { name: "Settings", href: "/portal/settings", icon: Settings },
   ];
 

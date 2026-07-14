@@ -37,7 +37,7 @@ export interface Club {
   id: string;
   name: string;
   logo: string;
-  president: string;
+  leaders: { designation: string; name: string }[];
   charterYear: string;
   memberCount: number;
   totalProjects: number;
@@ -122,112 +122,7 @@ const oceanImage = (id: number) => {
   return ids[id % ids.length];
 };
 
-const mockClubs: Club[] = [
-  {
-    id: "club-1",
-    name: "Rotaract Club of Bengaluru South",
-    logo: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=200&q=80",
-    president: "Rtr. Ananya Sharma",
-    charterYear: "2012",
-    memberCount: 45,
-    totalProjects: 32,
-    totalPoints: 1250,
-    zone: "Zone 1",
-    description: "One of the oldest community-based clubs in the district, focused on rural literacy and water conservation.",
-    email: "south.rotaract@gmail.com",
-  },
-  {
-    id: "club-2",
-    name: "Rotaract Club of RV College of Engineering",
-    logo: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&w=200&q=80",
-    president: "Rtr. Rohan Kamath",
-    charterYear: "2015",
-    memberCount: 120,
-    totalProjects: 45,
-    totalPoints: 1580,
-    zone: "Zone 1",
-    description: "An institution-based powerhouse leveraging technical skills for rural development and smart solutions.",
-    email: "rotaract.rvce@rvce.edu.in",
-  },
-  {
-    id: "club-3",
-    name: "Rotaract Club of Indira Nagar",
-    logo: "https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?auto=format&fit=crop&w=200&q=80",
-    president: "Rtr. Vikram Aditya",
-    charterYear: "2018",
-    memberCount: 38,
-    totalProjects: 28,
-    totalPoints: 1420,
-    zone: "Zone 2",
-    description: "A community-based club bringing together young professionals to solve urban waste and mental health issues.",
-    email: "indiranagar.rotaract@gmail.com",
-  },
-  {
-    id: "club-4",
-    name: "Rotaract Club of PES University",
-    logo: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=200&q=80",
-    president: "Rtr. Meghna Iyer",
-    charterYear: "2019",
-    memberCount: 140,
-    totalProjects: 39,
-    totalPoints: 1100,
-    zone: "Zone 2",
-    description: "Driving large-scale blood donation drives and stem cell registry programs across campuses.",
-    email: "rotaract@pes.edu",
-  },
-  {
-    id: "club-5",
-    name: "Rotaract Club of Tumakuru Elite",
-    logo: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=200&q=80",
-    president: "Rtr. Siddarth Gowda",
-    charterYear: "2020",
-    memberCount: 30,
-    totalProjects: 24,
-    totalPoints: 980,
-    zone: "Zone 3",
-    description: "Committed to raising awareness for organic farming and installing solar street lamps in rural Tumakuru.",
-    email: "tumakuru.elite@yahoo.com",
-  },
-  {
-    id: "club-6",
-    name: "Rotaract Club of Jayanagar",
-    logo: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=200&q=80",
-    president: "Rtr. Kavya Shree",
-    charterYear: "2014",
-    memberCount: 55,
-    totalProjects: 36,
-    totalPoints: 1350,
-    zone: "Zone 1",
-    description: "Active in organizing career development seminars and women empowerment workshops in suburban communities.",
-    email: "jayanagar.rotaract@outlook.com",
-  },
-  {
-    id: "club-7",
-    name: "Rotaract Club of Kengeri Central",
-    logo: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=200&q=80",
-    president: "Rtr. Harish Kumar",
-    charterYear: "2021",
-    memberCount: 28,
-    totalProjects: 18,
-    totalPoints: 720,
-    zone: "Zone 3",
-    description: "Focuses on afforestation campaigns and creating butterfly corridors along highways.",
-    email: "kengeri.central@gmail.com",
-  },
-  {
-    id: "club-8",
-    name: "Rotaract Club of Bengaluru West",
-    logo: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=200&q=80",
-    president: "Rtr. Sneha Patel",
-    charterYear: "2011",
-    memberCount: 50,
-    totalProjects: 41,
-    totalPoints: 1610,
-    zone: "Zone 2",
-    description: "Spearheading vocational training and providing digital literacy labs for underprivileged children.",
-    email: "west.rotaract@gmail.com",
-  }
-];
+import { mockClubs } from "./mockClubsData";
 
 const mockProjects: Project[] = [
   {
@@ -598,7 +493,7 @@ export const selectFilteredClubs = (state: StoreState) => {
     result = result.filter(
       (c) =>
         c.name.toLowerCase().includes(term) ||
-        c.president.toLowerCase().includes(term)
+        c.leaders.some(l => l.name.toLowerCase().includes(term))
     );
   }
   

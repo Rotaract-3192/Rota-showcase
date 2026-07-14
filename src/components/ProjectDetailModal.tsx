@@ -69,7 +69,6 @@ export default function ProjectDetailModal() {
                 + `Upload Date: ${formatDate(project.uploadDate)}\n\n`
                 + `METRICS:\n`
                 + `----------------------------------------------------\n`
-                + `Impact Score: ${project.impactScore}/100\n`
                 + `Beneficiaries: ${project.beneficiaries.toLocaleString()}\n`
                 + `Volunteer Hours: ${project.volunteerHours}\n`
                 + `Volunteers Participated: ${project.volunteerCount}\n`
@@ -140,12 +139,9 @@ export default function ProjectDetailModal() {
               <h3 className="font-headline text-lg font-bold text-white mb-3 border-b border-slate-800/40 pb-2">
                 District Impact Assessment
               </h3>
-              <p className="text-slate-400 font-body text-sm leading-relaxed">
-                Every project in Rotaract District 3192 goes through a rigorous monitoring
-                and evaluation process to track actual community benefits, volunteer efficiency,
-                and resource transparency. This project has been assigned a premium Impact Score
-                of <strong>{project.impactScore}/100</strong>, reflecting high community mobilization
-                and resource sustainability.
+              <p className="text-slate-400 font-body text-sm leading-relaxed max-w-2xl mt-4">
+                This project achieved significant community mobilization
+                and successfully met its intended milestones.
               </p>
             </div>
           </div>

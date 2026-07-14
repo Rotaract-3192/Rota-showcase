@@ -224,7 +224,11 @@ export default function AdminClubsPage() {
         <button 
           onClick={() => {
             const headers = ["ID", "Name", "President", "Charter Year", "Members", "Projects", "Points", "Zone", "Email"];
-            const rows = clubs.map(c => [c.id, `"${c.name}"`, `"${c.president}"`, c.charterYear, c.memberCount, c.totalProjects, c.totalPoints, c.zone, c.email]);
+            const getPres = (leaders: any[]) => {
+              const pres = leaders.find(l => l.designation.toLowerCase().includes("president"));
+              return pres ? pres.name : "N/A";
+            };
+            const rows = clubs.map(c => [c.id, `"${c.name}"`, `"${getPres(c.leaders)}"`, c.charterYear, c.memberCount, c.totalProjects, c.totalPoints, c.zone, c.email]);
             const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
             const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);

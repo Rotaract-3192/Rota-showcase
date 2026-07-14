@@ -29,7 +29,7 @@ export default function TopNavigation() {
 
         <div className="h-6 w-px bg-slate-800/80" />
 
-        <Link href="/portal/profile" className="flex items-center gap-3 group">
+        <div className="flex items-center gap-3 group">
           <div className="text-right hidden sm:block">
             <p className="text-xs font-bold text-white group-hover:text-electric-blue transition-colors">
               Rtr. {user?.name || "Member"}
@@ -47,7 +47,7 @@ export default function TopNavigation() {
               }} 
             />
           </div>
-        </Link>
+        </div>
       </div>
     </header>
   );
