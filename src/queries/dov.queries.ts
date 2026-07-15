@@ -19,7 +19,7 @@ async function fetchDovs(options: QueryOptions = {}) {
   }
   if (options.search?.query) params.set('search', options.search.query);
 
-  const res = await fetch(`/rotaract-district-portal/api/dov?${params.toString()}`);
+  const res = await fetch(`/api/dov?${params.toString()}`);
   if (!res.ok) {
     throw new Error('Failed to fetch dovs');
   }
@@ -27,7 +27,7 @@ async function fetchDovs(options: QueryOptions = {}) {
 }
 
 async function fetchDov(id: string) {
-  const res = await fetch(`/rotaract-district-portal/api/dov?id=${encodeURIComponent(id)}`);
+  const res = await fetch(`/api/dov?id=${encodeURIComponent(id)}`);
   if (!res.ok) {
     throw new Error('Failed to fetch dov');
   }

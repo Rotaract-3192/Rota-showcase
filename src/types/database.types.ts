@@ -7,6 +7,39 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export interface Database {
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          id: string
+          title: string
+          content: string
+          sender: string
+          target_audience: string
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          content: string
+          sender: string
+          target_audience: string
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          content?: string
+          sender?: string
+          target_audience?: string
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Relationships: []
+      }
       access_requests: {
         Row: {
           id: string

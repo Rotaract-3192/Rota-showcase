@@ -14,6 +14,7 @@ interface AccessRequest {
   clubName: string;
   clubId: string;
   requestedRole: string;
+  zone?: string | null;
   submissionDate: string;
   status: string;
   verifiedLeader?: {
@@ -46,6 +47,7 @@ export default function AdminAccessRequestsPage() {
             clubName: r.clubs?.name || "Unknown Club",
             clubId: r.club_id,
             requestedRole: r.requested_role,
+            zone: r.zone,
             submissionDate: r.created_at,
             status: r.status,
             verifiedLeader: r.verifiedLeader
@@ -142,8 +144,12 @@ export default function AdminAccessRequestsPage() {
           },
           {
             header: "Club",
-            accessorKey: "clubName",
-            className: "text-xs font-body"
+            cell: (req) => (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-body">{req.clubName}</span>
+                {req.zone && <span className="text-[10px] text-slate-400 font-metadata">Zone {req.zone}</span>}
+              </div>
+            )
           },
           {
             header: "Requested Role",

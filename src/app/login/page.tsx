@@ -42,6 +42,7 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [zone, setZone] = useState("1");
   
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,6 +65,7 @@ export default function LoginPage() {
           full_name: fullName,
           email,
           phone: phone || null,
+          zone,
         }),
       });
       const result = await res.json();
@@ -191,6 +193,20 @@ export default function LoginPage() {
                     {clubsError && (
                       <p className="text-[10px] text-red-400 font-metadata">{clubsError}</p>
                     )}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Zone</label>
+                    <select
+                      required
+                      value={zone}
+                      onChange={(e) => setZone(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-xs text-slate-200 placeholder-slate-600 focus:outline-none transition-all"
+                    >
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                    </select>
                   </div>
 
                   <div className="flex flex-col gap-1.5">

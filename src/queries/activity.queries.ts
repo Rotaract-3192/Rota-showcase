@@ -20,7 +20,7 @@ async function fetchActivities(options: QueryOptions = {}) {
   if (options.search?.query) params.set('search', options.search.query);
   if (options.filters?.club_id) params.set('club_id', String(options.filters.club_id));
 
-  const res = await fetch(`/rotaract-district-portal/api/activities?${params.toString()}`);
+  const res = await fetch(`/api/activities?${params.toString()}`);
   if (!res.ok) {
     throw new Error('Failed to fetch activities');
   }
@@ -28,7 +28,7 @@ async function fetchActivities(options: QueryOptions = {}) {
 }
 
 async function fetchActivity(id: string) {
-  const res = await fetch(`/rotaract-district-portal/api/activities?id=${encodeURIComponent(id)}`);
+  const res = await fetch(`/api/activities?id=${encodeURIComponent(id)}`);
   if (!res.ok) {
     throw new Error('Failed to fetch activity');
   }

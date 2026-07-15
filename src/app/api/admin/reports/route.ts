@@ -87,15 +87,15 @@ export async function GET(req: NextRequest) {
     
     if (type === 'projects') {
       // Fetch all activities along with their club names
-      const activities = await supabaseFetch('/activities?select=id,title,status,created_at,type,start_date,description,venue,clubs(name)&deleted_at=is.null');
+      const activities = await supabaseFetch('/activities?select=id,title,status,created_at,type,start_time,description,venue,clubs(name)&deleted_at=is.null');
       
-      const result = activities.map((a: any) => ({
+      const result = (activities || []).map((a: any) => ({
         id: a.id,
         title: a.title,
-        type: a.type || 'PROJECT',
+        type: a.type || 'N/A',
         status: a.status || 'DRAFT',
         clubName: a.clubs?.name || 'Independent Member',
-        startDate: a.start_date || 'N/A',
+        startDate: a.start_time || 'N/A',
         venue: a.venue || 'N/A',
         description: a.description || ''
       }));

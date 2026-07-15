@@ -19,7 +19,7 @@ async function fetchOrientations(options: QueryOptions = {}) {
   }
   if (options.search?.query) params.set('search', options.search.query);
 
-  const res = await fetch(`/rotaract-district-portal/api/orientations?${params.toString()}`);
+  const res = await fetch(`/api/orientations?${params.toString()}`);
   if (!res.ok) {
     throw new Error('Failed to fetch orientations');
   }
@@ -27,7 +27,7 @@ async function fetchOrientations(options: QueryOptions = {}) {
 }
 
 async function fetchOrientation(id: string) {
-  const res = await fetch(`/rotaract-district-portal/api/orientations?id=${encodeURIComponent(id)}`);
+  const res = await fetch(`/api/orientations?id=${encodeURIComponent(id)}`);
   if (!res.ok) {
     throw new Error('Failed to fetch orientation');
   }

@@ -13,25 +13,13 @@ export default function AdminAuditLogsPage() {
   useEffect(() => {
     async function fetchLogs() {
       try {
-        const { data, error } = await supabase
-          .from("audit_logs")
-          .select(`
-            id,
-            action,
-            created_at,
-            table_name,
-            new_data,
-            member_profiles (
-              first_name,
-              last_name,
-              email
-            )
-          `)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .limit(50);
+        const res = await fetch("/api/admin/audit-logs");
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Failed to fetch audit logs");
+        }
         
-        if (error) throw error;
+        const { logs: data } = await res.json();
         
         if (data) {
           const mapped = data.map((log: any) => {

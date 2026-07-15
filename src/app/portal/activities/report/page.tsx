@@ -133,9 +133,9 @@ export default function ReportActivityPage() {
         volunteer_hours: data.volunteerHours,
         submit_for_publication: data.submitForPublication || false,
         feature_activity: data.featureActivity || false,
-        start_date: new Date(data.startDate).toISOString(),
-        end_date: new Date(data.sameAsStart ? data.startDate : (data.endDate || data.startDate)).toISOString(),
-        location: data.venue,
+        start_time: new Date(data.startDate).toISOString(),
+        end_time: new Date(data.sameAsStart ? data.startDate : (data.endDate || data.startDate)).toISOString(),
+        venue: data.venue,
       };
 
       await createActivity(payload);
@@ -438,7 +438,7 @@ export default function ReportActivityPage() {
                 <input type="checkbox" {...register("submitForPublication")} className="w-5 h-5 rounded border-slate-600 bg-navy-deep/60 accent-electric-blue" />
                 <div className="flex flex-col">
                   <span className="text-sm font-bold text-white">Submit For District Publication</span>
-                  <span className="text-xs text-slate-400">Request the PR team to publish this on the District Social Media handles.</span>
+                  <span className="text-xs text-slate-400">Request the PR team to publish this on the District Social Media handles. (Maximum of 2 events per club per month).</span>
                 </div>
               </label>
 

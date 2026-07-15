@@ -19,7 +19,7 @@ async function fetchInstallations(options: QueryOptions = {}) {
   }
   if (options.search?.query) params.set('search', options.search.query);
 
-  const res = await fetch(`/rotaract-district-portal/api/installations?${params.toString()}`);
+  const res = await fetch(`/api/installations?${params.toString()}`);
   if (!res.ok) {
     throw new Error('Failed to fetch installations');
   }
@@ -27,7 +27,7 @@ async function fetchInstallations(options: QueryOptions = {}) {
 }
 
 async function fetchInstallation(id: string) {
-  const res = await fetch(`/rotaract-district-portal/api/installations?id=${encodeURIComponent(id)}`);
+  const res = await fetch(`/api/installations?id=${encodeURIComponent(id)}`);
   if (!res.ok) {
     throw new Error('Failed to fetch installation');
   }

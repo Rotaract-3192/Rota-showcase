@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   BookOpen,
   Tent,
-  FileText
+  FileText,
+  Megaphone
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -23,10 +24,12 @@ export default function Sidebar() {
 
   const navItems = [
     { name: "Dashboard", href: "/portal/dashboard", icon: LayoutDashboard },
+    { name: "Announcements", href: "/portal/announcements", icon: Megaphone },
+    { name: "Club Members", href: "/portal/members", icon: Users },
     { name: "Club Activities", href: "/portal/activities", icon: Layers },
     { name: "Orientations", href: "/portal/orientations", icon: BookOpen },
     { name: "Installations", href: "/portal/installations", icon: Tent },
-    { name: "Meetings", href: "/portal/meetings", icon: Users },
+    { name: "Meetings", href: "/portal/meetings", icon: Calendar },
     { name: "DOV", href: "/portal/dov", icon: Award },
     { name: "Bulletin", href: "/portal/bulletin", icon: FileText },
   ];

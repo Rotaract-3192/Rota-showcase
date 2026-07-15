@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { club_id, requested_role, full_name, email, phone } = body;
+    const { club_id, requested_role, full_name, email, phone, zone } = body;
 
     if (!club_id || !requested_role || !full_name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
           full_name,
           email,
           phone: phone || null,
+          zone,
           status: 'PENDING',
         }),
       }

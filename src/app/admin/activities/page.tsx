@@ -37,7 +37,7 @@ export default function AdminActivitiesPage() {
           type: act.type || "Project",
           club: act.clubs?.name || "Independent Member",
           title: act.title,
-          date: act.start_date ? new Date(act.start_date).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A",
+          date: act.start_time ? new Date(act.start_time).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A",
           status: (act.status === 'PUBLISHED' ? 'Approved' : act.status === 'CANCELLED' ? 'Cancelled' : 'Pending') as 'Approved' | 'Pending' | 'Cancelled',
           priority: (act.status === 'DRAFT' ? 'High' : 'Normal') as 'High' | 'Normal',
           description: act.description || "No description provided.",

@@ -3,7 +3,7 @@
  * Use this for all client-side fetch() calls to /api/* routes.
  *
  * Example:
- *   apiUrl('/api/clubs')  =>  '/rotaract-district-portal/api/clubs'
+ *   apiUrl('/api/clubs')  =>  '/api/clubs'
  */
 export function apiUrl(path: string): string {
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
