@@ -244,7 +244,7 @@ export default function AdminOperationsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/40">
-                  {filteredData.map((item) => (
+                  {filteredData.map((item: any) => (
                     <tr key={item.id} className="hover:bg-slate-800/20 transition-colors">
                       <td className="px-5 py-3 font-bold text-slate-200">{item.clubs?.name || "Unknown Club"}</td>
                       <td className="px-5 py-3 text-xs text-slate-400">{new Date(item.date).toLocaleDateString()}</td>
