@@ -1,7 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useStore } from "@/store/useStore";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 import {
   Layers,
   Users,
@@ -11,6 +13,9 @@ import {
   TrendingUp,
   Activity,
   Sparkles,
+  Megaphone,
+  ArrowRight,
+  Bell,
 } from "lucide-react";
 import {
   AreaChart,
@@ -71,6 +76,24 @@ const KpiCard = ({ title, value, icon: Icon, trend, trendValue }: any) => (
 
 export default function DashboardPage() {
   const stats = useStore((state) => state.stats);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
+
+  useEffect(() => {
+    async function loadAnnouncements() {
+      try {
+        const res = await fetch("/api/announcements");
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        setAnnouncements(data.announcements?.slice(0, 3) || []);
+      } catch (err) {
+        console.error("Error loading dashboard announcements:", err);
+      } finally {
+        setLoadingAnnouncements(false);
+      }
+    }
+    loadAnnouncements();
+  }, []);
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
@@ -165,34 +188,88 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* Insights Panel */}
-      <div className="bg-gradient-to-r from-navy-dark/80 to-navy-dark/40 border border-slate-800/60 p-6 rounded-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-electric-blue/5 to-transparent pointer-events-none" />
+      {/* Bottom Grid: Announcements and AI Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 rounded-lg bg-electric-blue/10 border border-electric-blue/30 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-electric-blue animate-pulse" />
+        {/* Recent Announcements Panel */}
+        <div className="bg-navy-dark/40 border border-slate-800/60 p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-electric-blue/10 border border-electric-blue/30 flex items-center justify-center">
+                  <Megaphone className="w-4 h-4 text-electric-blue" />
+                </div>
+                <h3 className="text-sm font-bold text-white">Recent Announcements</h3>
+              </div>
+              <Link 
+                href="/portal/announcements" 
+                className="text-xs text-electric-blue hover:text-ocean-glow flex items-center gap-1 transition-colors"
+              >
+                View all <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {loadingAnnouncements ? (
+                <p className="text-xs text-slate-500 font-metadata">Loading announcements...</p>
+              ) : announcements.length === 0 ? (
+                <div className="py-4 text-center">
+                  <p className="text-xs text-slate-500">No active announcements</p>
+                </div>
+              ) : (
+                announcements.map((ann) => (
+                  <div key={ann.id} className="p-3.5 rounded-xl bg-navy-deep/40 border border-slate-800/60 flex items-start gap-3 hover:border-slate-800 transition-colors">
+                    <div className="p-1.5 rounded bg-slate-800 shrink-0 mt-0.5">
+                      <Bell className="w-3.5 h-3.5 text-electric-blue" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-bold text-slate-200 truncate">{ann.title}</h4>
+                      <p className="text-[11px] text-slate-400 font-body line-clamp-2 mt-1 leading-relaxed">
+                        {ann.content}
+                      </p>
+                      <span className="text-[9px] text-slate-500 font-metadata block mt-2 uppercase tracking-wider">
+                        {ann.sender} • {new Date(ann.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-          <h3 className="text-sm font-bold text-white">AI Operations Insights</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-metadata text-slate-500 uppercase font-bold">Most Active Avenue</span>
-            <span className="text-sm font-body text-slate-200">Community Service (45 Projects)</span>
-            <span className="text-xs text-slate-400 mt-1">Driving 65% of total volunteer hours this quarter.</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-metadata text-slate-500 uppercase font-bold">Highest Impact</span>
-            <span className="text-sm font-body text-ocean-glow">Project Jal Dhara</span>
-            <span className="text-xs text-slate-400 mt-1">Achieved a peak score of 98/100 across 12k beneficiaries.</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-metadata text-slate-500 uppercase font-bold">Growth Alert</span>
-            <span className="text-sm font-body text-emerald-400">+24% Beneficiary Reach</span>
-            <span className="text-xs text-slate-400 mt-1">Significant spike detected due to Zone 2 health camps.</span>
+        {/* Insights Panel */}
+        <div className="bg-gradient-to-r from-navy-dark/80 to-navy-dark/40 border border-slate-800/60 p-6 rounded-2xl relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-electric-blue/5 to-transparent pointer-events-none" />
+          
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-electric-blue/10 border border-electric-blue/30 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-electric-blue animate-pulse" />
+              </div>
+              <h3 className="text-sm font-bold text-white">AI Operations Insights</h3>
+            </div>
+
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-metadata text-slate-500 uppercase font-bold">Most Active Avenue</span>
+                <span className="text-sm font-body text-slate-200">Community Service (45 Projects)</span>
+                <span className="text-xs text-slate-400 mt-1">Driving 65% of total volunteer hours this quarter.</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-metadata text-slate-500 uppercase font-bold">Highest Impact</span>
+                <span className="text-sm font-body text-ocean-glow">Project Jal Dhara</span>
+                <span className="text-xs text-slate-400 mt-1">Achieved a peak score of 98/100 across 12k beneficiaries.</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-metadata text-slate-500 uppercase font-bold">Growth Alert</span>
+                <span className="text-sm font-body text-emerald-400">+24% Beneficiary Reach</span>
+                <span className="text-xs text-slate-400 mt-1">Significant spike detected due to Zone 2 health camps.</span>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
 
     </div>

@@ -19,7 +19,8 @@ import {
   BrainCircuit,
   LogOut,
   Waves,
-  UserCircle
+  UserCircle,
+  Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { name: "Access Requests", href: "/admin/access-requests", icon: ShieldCheck },
   { name: "Activities Review", href: "/admin/activities", icon: ClipboardList },
   { name: "Project Moderation", href: "/admin/projects", icon: Layers },
+  { name: "Operations Review", href: "/admin/operations", icon: Briefcase },
   { name: "Publications", href: "/admin/publications", icon: FileText },
   { name: "Leaderboard Engine", href: "/admin/leaderboard-engine", icon: Trophy },
   { name: "District Calendar", href: "/admin/calendar", icon: CalendarDays },

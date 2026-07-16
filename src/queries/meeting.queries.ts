@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { QueryOptions } from '@/types/api.types';
 
-const BASE_URL = '/rotaract-district-portal/api/meetings';
+const BASE_URL = '/api/meetings';
 
 export const meetingKeys = {
   all: ['meeting'] as const,

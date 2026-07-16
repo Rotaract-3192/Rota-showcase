@@ -31,7 +31,7 @@ async function supabaseFetch(path: string, options: RequestInit = {}) {
 export async function GET() {
   try {
     const data = await supabaseFetch(
-      '/activities?select=id,title,status,created_at,type,start_date,description,venue,clubs(name)&deleted_at=is.null'
+      '/activities?select=id,title,status,created_at,type,start_time,description,venue,clubs(name)&deleted_at=is.null'
     );
     return NextResponse.json(data);
   } catch (err: any) {

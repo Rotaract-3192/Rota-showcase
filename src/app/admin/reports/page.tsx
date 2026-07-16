@@ -26,7 +26,7 @@ export default function AdminReportsPage() {
   const handleExportClubs = async () => {
     setDownloading("clubs");
     try {
-      const res = await fetch('/rotaract-district-portal/api/admin/reports?type=clubs');
+      const res = await fetch('/api/admin/reports?type=clubs');
       if (!res.ok) throw new Error("Failed to fetch reports");
       const data = await res.json();
       
@@ -54,7 +54,7 @@ export default function AdminReportsPage() {
   const handleExportProjects = async () => {
     setDownloading("projects");
     try {
-      const res = await fetch('/rotaract-district-portal/api/admin/reports?type=projects');
+      const res = await fetch('/api/admin/reports?type=projects');
       if (!res.ok) throw new Error("Failed to fetch reports");
       const data = await res.json();
 
@@ -83,7 +83,7 @@ export default function AdminReportsPage() {
   const handleExportLeaderboard = async () => {
     setDownloading("leaderboard");
     try {
-      const res = await fetch('/rotaract-district-portal/api/admin/reports?type=leaderboard');
+      const res = await fetch('/api/admin/reports?type=leaderboard');
       if (!res.ok) throw new Error("Failed to fetch reports");
       const data = await res.json();
 
