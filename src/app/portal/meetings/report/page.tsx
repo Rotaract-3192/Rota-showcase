@@ -9,7 +9,7 @@ import { useProfile } from "@/hooks/useProfile";
 
 export default function ReportMeetingPage() {
   const router = useRouter();
-  const { club } = useProfile();
+  const { club, profile } = useProfile();
   const { mutateAsync: createMeeting, isPending } = useCreateMeeting();
 
   // Form State
@@ -35,8 +35,15 @@ export default function ReportMeetingPage() {
       // Combine Meeting Details with Minutes text
       const richMinutes = `Title: ${meetingTitle || "General Meeting"} (${meetingType.toUpperCase()}) | Time: ${startTime || "00:00"} - ${endTime || "00:00"}\n\nMinutes:\n${minutesText}`;
 
+	if (!club?.id || !profile?.id) {
+    setErrorMsg(
+        "Unable to load your profile. Please refresh and try again."
+    );
+    return;
+}
+
       await createMeeting({
-        club_id: club?.id || "d157a16b-1234-4b45-9a8b-319200000000",
+        club_id: club.id,
         date: date,
         minutes_text: richMinutes,
         attendees_count: parseInt(participantsCount) || 0

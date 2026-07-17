@@ -33,7 +33,7 @@ async function supabaseFetch(path: string, options: RequestInit = {}) {
 export async function GET() {
   try {
     const requests = await supabaseFetch(
-      '/access_requests?status=eq.PENDING&deleted_at=is.null&select=id,full_name,email,phone,requested_role,zone,created_at,status,club_id,clubs(name)'
+      '/access_requests?status=eq.PENDING&deleted_at=is.null&select=id,full_name,email,phone,requested_role,created_at,status,club_id,clubs(name)'
     );
 
     if (Array.isArray(requests) && requests.length > 0) {

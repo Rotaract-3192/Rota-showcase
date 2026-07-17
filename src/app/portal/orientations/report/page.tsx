@@ -9,7 +9,7 @@ import { useProfile } from "@/hooks/useProfile";
 
 export default function ReportOrientationPage() {
   const router = useRouter();
-  const { club } = useProfile();
+  const { club, profile } = useProfile();
   const { mutateAsync: createOrientation, isPending } = useCreateOrientation();
 
   // Form State
@@ -39,8 +39,15 @@ export default function ReportOrientationPage() {
       // Concatenate non-database fields into remarks for storage
       const richRemarks = `Orientation: ${name || "Untitled"} | Type: ${orientationType} | Venue: ${venue || "N/A"} | Time: ${startTime || "00:00"} to ${endTime || "00:00"}. Remarks: ${remarks || "None"}`;
 
+	if (!club?.id || !profile?.id) {
+  setErrorMsg(
+    "Unable to load your profile. Please refresh and try again."
+  );
+  return;
+}
+
       await createOrientation({
-        club_id: club?.id || "d157a16b-1234-4b45-9a8b-319200000000",
+        club_id: club.id,
         date: date,
         speaker_name: speakerName || "Guest Facilitator",
         new_members_inducted: parseInt(participantsCount) || 0,

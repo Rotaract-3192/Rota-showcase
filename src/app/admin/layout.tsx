@@ -16,6 +16,8 @@ export default async function AdminLayout({
   }
 
   const email = user.emailAddresses[0]?.emailAddress;
+  console.log("========== ADMIN LAYOUT ==========");
+  console.log("EMAIL:", email);
   if (!email) {
     redirect('/portal/dashboard');
   }
@@ -38,6 +40,7 @@ export default async function AdminLayout({
     
     if (resProfile.ok) {
       const profiles = await resProfile.json();
+      console.log("PROFILE:", profiles);
       if (profiles && profiles.length > 0) {
         const resRoles = await fetch(`${supabaseUrl}/rest/v1/member_roles?member_id=eq.${profiles[0].id}&select=role`, {
           headers,
@@ -46,15 +49,25 @@ export default async function AdminLayout({
         
         if (resRoles.ok) {
           const roles = await resRoles.json();
+	  console.log("ROLES:", roles);
           const roleStrings = roles.map((r: any) => r.role);
-          
+          console.log("ROLE STRINGS:", roleStrings);
           if (
             roleStrings.includes('District Admin') || 
             roleStrings.includes('District Core Team') || 
             roleStrings.includes('Super Admin') || 
             roleStrings.includes('Admin')
           ) {
-            return <AdminLayoutClient>{children}</AdminLayoutClient>;
+            return (
+  	      <AdminLayoutClient
+    		user={{
+      		  name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Administrator",
+      		  email,
+    		}}
+  	     >
+    		{children}
+  	    </AdminLayoutClient>
+	);
           }
         }
       }

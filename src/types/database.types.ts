@@ -508,7 +508,7 @@ export interface Database {
       member_profiles: {
         Row: {
           id: string
-          auth_id: string
+          auth_id?: string | null
           club_id: string | null
           first_name: string
           last_name: string
@@ -522,7 +522,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          auth_id: string
+          auth_id?: string | null
           club_id?: string | null
           first_name: string
           last_name: string
@@ -536,7 +536,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          auth_id?: string
+          auth_id?: string | null
           club_id?: string | null
           first_name?: string
           last_name?: string

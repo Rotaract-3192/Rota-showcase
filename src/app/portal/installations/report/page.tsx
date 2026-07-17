@@ -36,13 +36,20 @@ export default function ReportInstallationPage() {
     try {
       setErrorMsg("");
 
-      await createInstallation({
-        club_id: club?.id || "d157a16b-1234-4b45-9a8b-319200000000",
-        date: date,
-        venue: venue || "Virtual / TBD",
-        incoming_president_id: profile?.id || "5057e100-0000-4000-8000-000000000001", // Fallback to system actor ID
-        chief_guest: eventName || "Club Installation Board"
-      });
+      if (!club?.id || !profile?.id) {
+  setErrorMsg(
+    "Unable to load your club profile. Please refresh the page and try again."
+  );
+  return;
+}
+
+await createInstallation({
+  club_id: club.id,
+  date,
+  venue: venue || "Virtual / TBD",
+  incoming_president_id: profile.id,
+  chief_guest: eventName || "Club Installation Board",
+});
 
       router.push("/portal/installations");
     } catch (err: any) {

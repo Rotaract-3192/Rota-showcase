@@ -103,20 +103,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Create placeholder auth_id
-    const placeholderAuthId = `pending_${crypto.randomUUID()}`;
-
+    
     // 4. Insert into member_profiles
     const { data: newMember, error: insertErr } = await supabase
       .from("member_profiles")
       .insert({
-        auth_id: placeholderAuthId,
-        club_id: profile.club_id,
-        first_name: firstName,
-        last_name: lastName,
-        email: memberEmail,
-        phone: phone || null,
-        blood_group: bloodGroup || null,
-      })
+    club_id: profile.club_id,
+    first_name: firstName,
+    last_name: lastName,
+    email: memberEmail,
+    phone: phone || null,
+    blood_group: bloodGroup || null,
+})
       .select()
       .single();
 

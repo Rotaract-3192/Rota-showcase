@@ -34,14 +34,20 @@ export default function ReportDovPage() {
 
       // Combine visit remarks
       const richRemarks = `Event: ${eventName || "DRR Visit"} | Venue: ${venue || "N/A"} | Time: ${startTime || "00:00"} - ${endTime || "00:00"} | Report Link: ${reportLink || "None"} | Docs Sent: ${docsSent ? "Yes" : "No"}`;
+	if (!club?.id || !profile?.id) {
+  setErrorMsg(
+    "Unable to load your profile. Please refresh and try again."
+  );
+  return;
+}
 
-      await createDov({
-        club_id: club?.id || "d157a16b-1234-4b45-9a8b-319200000000",
-        date: date,
-        visiting_official_id: profile?.id || "5057e100-0000-4000-8000-000000000001", // Fallback to system actor ID
-        evaluation_score: 95, // Default/evaluation mock score
-        remarks: richRemarks
-      });
+await createDov({
+  club_id: club.id,
+  date,
+  visiting_official_id: profile.id,
+  evaluation_score: 95,
+  remarks: richRemarks,
+});
 
       router.push("/portal/dov");
     } catch (err: any) {
