@@ -103,6 +103,9 @@ interface StoreState {
   // Selected Project for detail modal
   selectedProjectId: string | null;
   setSelectedProjectId: (id: string | null) => void;
+  
+  setClubs: (clubs: Club[]) => void;
+  setProjects: (projects: Project[]) => void;
 }
 
 // Helper to generate premium nature/ocean visual gradients or placeholders
@@ -308,11 +311,8 @@ const mockProjects: Project[] = [
 ];
 
 export const useStore = create<StoreState>((set, get) => ({
-  projects: mockProjects,
-  clubs: (mockClubs.map((c: any) => ({
-    ...c,
-    president: c.leaders?.find((l: any) => l.designation.toLowerCase().includes("president"))?.name || "N/A"
-  })) as Club[]).sort((a, b) => a.name.localeCompare(b.name)),
+  projects: [],
+  clubs: [],
   users: [
     {
       id: "usr_1",
@@ -421,6 +421,8 @@ export const useStore = create<StoreState>((set, get) => ({
   
   selectedProjectId: null,
   setSelectedProjectId: (id) => set({ selectedProjectId: id }),
+  setClubs: (clubs) => set({ clubs: [...clubs].sort((a, b) => a.name.localeCompare(b.name)) }),
+  setProjects: (projects) => set({ projects }),
 }));
 
 // Selectors for Filtered Data
