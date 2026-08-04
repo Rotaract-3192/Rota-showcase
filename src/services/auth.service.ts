@@ -73,6 +73,7 @@ export class AuthService {
       
       if (roleNames.includes('Super Admin')) primaryRole = 'Super Admin';
       else if (roleNames.includes('District')) primaryRole = 'District';
+      else if (roleNames.includes('ZRR')) primaryRole = 'ZRR';
       else if (roleNames.includes('President')) primaryRole = 'President';
       else if (roleNames.some(r => r.includes('Board'))) primaryRole = 'Board Member';
 

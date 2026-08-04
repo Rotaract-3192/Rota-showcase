@@ -26,6 +26,7 @@ export default function AdminPublicationsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -37,18 +38,31 @@ export default function AdminPublicationsPage() {
     e.preventDefault();
     if (!title || !author) return;
 
-    const newPub: Publication = {
-      id: `pub_${Date.now()}`,
-      title,
-      category,
-      author,
-      date: new Date().toISOString().split('T')[0],
-      status
-    };
+    if (editingId) {
+      setPubs(pubs.map(p => p.id === editingId ? {
+        ...p,
+        title,
+        category,
+        author,
+        status
+      } : p));
+      setSuccessMsg("Publication updated successfully!");
+    } else {
+      const newPub: Publication = {
+        id: `pub_${Date.now()}`,
+        title,
+        category,
+        author,
+        date: new Date().toISOString().split('T')[0],
+        status
+      };
+      setPubs([newPub, ...pubs]);
+      setSuccessMsg("Publication created successfully!");
+    }
 
-    setPubs([newPub, ...pubs]);
     setTitle("");
     setIsModalOpen(false);
+    setEditingId(null);
 
     setSuccessMsg("Publication created successfully!");
     setTimeout(() => setSuccessMsg(""), 4000);
@@ -81,7 +95,14 @@ export default function AdminPublicationsPage() {
           </p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditingId(null);
+            setTitle("");
+            setCategory("Circular");
+            setAuthor("DRR Team");
+            setStatus("Published");
+            setIsModalOpen(true);
+          }}
           className="px-4 py-2 flex items-center gap-2 rounded-lg bg-electric-blue text-navy-deep hover:bg-ocean-glow text-xs font-bold transition-colors shadow-[0_0_15px_rgba(0,240,255,0.3)]"
         >
           <Plus className="w-4 h-4" />
@@ -142,7 +163,18 @@ export default function AdminPublicationsPage() {
                 <button className="p-1.5 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" title="View">
                   <Eye className="w-4 h-4" />
                 </button>
-                <button className="p-1.5 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" title="Edit">
+                <button 
+                  onClick={() => {
+                    setEditingId(pub.id);
+                    setTitle(pub.title);
+                    setCategory(pub.category);
+                    setAuthor(pub.author);
+                    setStatus(pub.status);
+                    setIsModalOpen(true);
+                  }}
+                  className="p-1.5 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" 
+                  title="Edit"
+                >
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button 
@@ -167,7 +199,7 @@ export default function AdminPublicationsPage() {
             <div className="flex items-center justify-between border-b border-slate-800/60 pb-3">
               <h3 className="font-headline text-lg font-bold text-white flex items-center gap-2">
                 <FileText className="w-5 h-5 text-electric-blue" />
-                New Publication
+                {editingId ? "Edit Publication" : "New Publication"}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -230,7 +262,7 @@ export default function AdminPublicationsPage() {
                 type="submit"
                 className="w-full mt-2 py-2.5 rounded-lg bg-electric-blue hover:bg-ocean-glow text-navy-deep text-xs font-bold font-metadata transition-colors shadow-lg"
               >
-                Create Document
+                {editingId ? "Update Document" : "Create Document"}
               </button>
             </form>
           </GlassPanel>

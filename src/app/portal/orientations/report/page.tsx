@@ -6,11 +6,33 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Send, Loader2, Users } from "lucide-react";
 import { useCreateOrientation } from "@/mutations/orientation.mutations";
 import { useProfile } from "@/hooks/useProfile";
+import PhotoUploadGroup from "@/components/PhotoUploadGroup";
 
 export default function ReportOrientationPage() {
   const router = useRouter();
   const { club, profile, isLoading } = useProfile();
   const { mutateAsync: createOrientation, isPending } = useCreateOrientation();
+
+  // Form State
+  const [name, setName] = useState("");
+  const [venue, setVenue] = useState("");
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [speakerName, setSpeakerName] = useState("");
+  const [orientationType, setOrientationType] = useState("club");
+  const [participantsCount, setParticipantsCount] = useState("");
+  const [remarks, setRemarks] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [uploadedUrls, setUploadedUrls] = useState<{
+    coverImage: string | null;
+    supportingImage1: string | null;
+    supportingImage2: string | null;
+  }>({
+    coverImage: null,
+    supportingImage1: null,
+    supportingImage2: null,
+  });
 
   if (isLoading) {
     return (
@@ -47,22 +69,14 @@ export default function ReportOrientationPage() {
     );
   }
 
-  // Form State
-  const [name, setName] = useState("");
-  const [venue, setVenue] = useState("");
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [speakerName, setSpeakerName] = useState("");
-  const [orientationType, setOrientationType] = useState("club");
-  const [participantsCount, setParticipantsCount] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date) {
       setErrorMsg("Please choose a valid date.");
+      return;
+    }
+    if (!uploadedUrls.coverImage) {
+      setErrorMsg("Cover photo is required. Please upload a cover photo under Media & Documentation.");
       return;
     }
     
@@ -86,7 +100,10 @@ export default function ReportOrientationPage() {
         date: date,
         speaker_name: speakerName || "Guest Facilitator",
         new_members_inducted: parseInt(participantsCount) || 0,
-        remarks: richRemarks
+        remarks: richRemarks,
+        cover_image: uploadedUrls.coverImage,
+        supporting_image_1: uploadedUrls.supportingImage1,
+        supporting_image_2: uploadedUrls.supportingImage2,
       });
 
       router.push("/portal/orientations");
@@ -197,6 +214,13 @@ export default function ReportOrientationPage() {
               onChange={(e) => setRemarks(e.target.value)}
               rows={3}
               className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none resize-none" 
+            />
+          </div>
+
+          <div className="mt-4 p-4 rounded-xl bg-navy-deep/40 border border-slate-800">
+            <PhotoUploadGroup
+              onImagesChange={(urls) => setUploadedUrls(urls)}
+              required={true}
             />
           </div>
           

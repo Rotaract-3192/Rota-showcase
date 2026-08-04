@@ -36,7 +36,7 @@ export default function ClubsPage() {
     setFilter("search", e.target.value);
   };
 
-  const zones = ["Zone 1", "Zone 2", "Zone 3"];
+  const zones = ["Arnava", "Pravaha", "Taranga", "Varuna", "Sagara", "Samudhra"];
   
   const getPresidentName = (leaders: { designation: string; name: string }[]) => {
     const pres = leaders.find(l => l.designation.toLowerCase().includes("president"));

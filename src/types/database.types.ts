@@ -79,6 +79,8 @@ export interface Database {
           submit_for_publication: boolean | null
           feature_activity: boolean | null
           cover_image: string | null
+          supporting_image_1: string | null
+          supporting_image_2: string | null
         }
         Insert: {
           id?: string
@@ -109,6 +111,8 @@ export interface Database {
           submit_for_publication?: boolean | null
           feature_activity?: boolean | null
           cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Update: {
           id?: string
@@ -139,6 +143,8 @@ export interface Database {
           submit_for_publication?: boolean | null
           feature_activity?: boolean | null
           cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Relationships: []
       }
@@ -508,6 +514,9 @@ export interface Database {
           updated_at: string
           deleted_at: string | null
           title: string | null
+          cover_image: string | null
+          supporting_image_1: string | null
+          supporting_image_2: string | null
         }
         Insert: {
           id?: string
@@ -520,6 +529,9 @@ export interface Database {
           updated_at?: string
           deleted_at?: string | null
           title?: string | null
+          cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Update: {
           id?: string
@@ -532,6 +544,9 @@ export interface Database {
           updated_at?: string
           deleted_at?: string | null
           title?: string | null
+          cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Relationships: []
       }
@@ -549,6 +564,9 @@ export interface Database {
           name: string | null
           start_time: string | null
           end_time: string | null
+          cover_image: string | null
+          supporting_image_1: string | null
+          supporting_image_2: string | null
         }
         Insert: {
           id?: string
@@ -563,6 +581,9 @@ export interface Database {
           name?: string | null
           start_time?: string | null
           end_time?: string | null
+          cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Update: {
           id?: string
@@ -577,6 +598,9 @@ export interface Database {
           name?: string | null
           start_time?: string | null
           end_time?: string | null
+          cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Relationships: []
       }
@@ -597,6 +621,9 @@ export interface Database {
           start_time: string | null
           end_time: string | null
           meeting_type: string | null
+          cover_image: string | null
+          supporting_image_1: string | null
+          supporting_image_2: string | null
         }
         Insert: {
           id?: string
@@ -614,6 +641,9 @@ export interface Database {
           start_time?: string | null
           end_time?: string | null
           meeting_type?: string | null
+          cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Update: {
           id?: string
@@ -631,6 +661,9 @@ export interface Database {
           start_time?: string | null
           end_time?: string | null
           meeting_type?: string | null
+          cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Relationships: []
       }
@@ -688,6 +721,7 @@ export interface Database {
           created_at: string
           updated_at: string
           deleted_at: string | null
+          zone: string | null
         }
         Insert: {
           id?: string
@@ -697,6 +731,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
+          zone?: string | null
         }
         Update: {
           id?: string
@@ -706,6 +741,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
+          zone?: string | null
         }
         Relationships: []
       }
@@ -758,6 +794,9 @@ export interface Database {
           start_time: string | null
           end_time: string | null
           orientation_type: string | null
+          cover_image: string | null
+          supporting_image_1: string | null
+          supporting_image_2: string | null
         }
         Insert: {
           id?: string
@@ -774,6 +813,9 @@ export interface Database {
           start_time?: string | null
           end_time?: string | null
           orientation_type?: string | null
+          cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Update: {
           id?: string
@@ -790,6 +832,9 @@ export interface Database {
           start_time?: string | null
           end_time?: string | null
           orientation_type?: string | null
+          cover_image?: string | null
+          supporting_image_1?: string | null
+          supporting_image_2?: string | null
         }
         Relationships: []
       }

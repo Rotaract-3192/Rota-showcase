@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuthContext } from "@/components/providers/auth-provider";
 import { 
   LayoutDashboard, 
   BarChart4, 
@@ -54,6 +55,8 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ isOpen, onClose, user }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { profileData } = useAuthContext();
+  const displayRole = profileData?.primaryRole || "Administrator";
 
   return (
     <aside 
@@ -125,6 +128,7 @@ export default function AdminSidebar({ isOpen, onClose, user }: AdminSidebarProp
           <div className="flex flex-col min-w-0">
             <p className="text-xs font-bold text-white truncate">{user.name}</p>
             <p className="text-[10px] text-slate-500 font-metadata truncate">{user.email}</p>
+            <p className="text-[10px] text-electric-blue font-metadata font-bold mt-0.5 truncate">{displayRole}</p>
           </div>
         </Link>
         

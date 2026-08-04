@@ -5,6 +5,7 @@ import GlassPanel from "@/components/GlassPanel";
 import { Clock, CheckCircle2, XCircle, Search, Filter, AlertTriangle, Loader2, FileDown, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiUrl } from "@/lib/api";
+import { useAuthContext } from "@/components/providers/auth-provider";
 
 interface Activity {
   id: string;
@@ -19,15 +20,32 @@ interface Activity {
 }
 
 export default function AdminActivitiesPage() {
+  const { profileData } = useAuthContext();
+  const zrrRole = profileData?.roles.find(r => r.role === 'ZRR');
+  const isSuperAdmin = profileData?.roles.some(r => 
+    ["District Admin", "District Core Team", "Super Admin", "Admin"].includes(r.role)
+  );
+  const userZone = zrrRole?.zone;
+
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [selectedZone, setSelectedZone] = useState<string>("All");
+
+  // Set default zone if user is ZRR
+  useEffect(() => {
+    if (!isSuperAdmin && userZone) {
+      setSelectedZone(userZone);
+    }
+  }, [userZone, isSuperAdmin]);
 
   const fetchActivities = async () => {
     try {
-      const res = await fetch(apiUrl('/api/admin/activities'));
+      setLoading(true);
+      const filter = (!isSuperAdmin && userZone) ? userZone : selectedZone;
+      const res = await fetch(apiUrl(`/api/admin/activities?zone=${encodeURIComponent(filter)}`));
       if (!res.ok) throw new Error("Failed to fetch activities");
       const data = await res.json();
       
@@ -54,7 +72,7 @@ export default function AdminActivitiesPage() {
 
   useEffect(() => {
     fetchActivities();
-  }, []);
+  }, [selectedZone, userZone, isSuperAdmin]);
 
   const handleApprove = async (activityId: string) => {
     try {
@@ -149,6 +167,25 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
           <p className="text-slate-400 text-sm font-body mt-1">
             Review and approve club activity reports before they hit the public showcase.
           </p>
+        </div>
+
+        {/* Zone Filter Dropdown */}
+        <div className="flex flex-col gap-1.5 min-w-[180px]">
+          <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
+          <select
+            value={selectedZone}
+            onChange={(e) => setSelectedZone(e.target.value)}
+            disabled={!isSuperAdmin && !!userZone}
+            className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none disabled:opacity-60"
+          >
+            {isSuperAdmin && <option value="All">All Zones</option>}
+            <option value="Arnava">Arnava</option>
+            <option value="Pravaha">Pravaha</option>
+            <option value="Taranga">Taranga</option>
+            <option value="Varuna">Varuna</option>
+            <option value="Sagara">Sagara</option>
+            <option value="Samudhra">Samudhra</option>
+          </select>
         </div>
       </div>
 

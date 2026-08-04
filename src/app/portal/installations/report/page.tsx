@@ -6,11 +6,35 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Send, Loader2, Users } from "lucide-react";
 import { useCreateInstallation } from "@/mutations/installation.mutations";
 import { useProfile } from "@/hooks/useProfile";
+import PhotoUploadGroup from "@/components/PhotoUploadGroup";
 
 export default function ReportInstallationPage() {
   const router = useRouter();
   const { club, profile, isLoading } = useProfile();
   const { mutateAsync: createInstallation, isPending } = useCreateInstallation();
+
+  // Form State
+  const [eventName, setEventName] = useState("");
+  const [venue, setVenue] = useState("");
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [participants, setParticipants] = useState("");
+  const [newMembers, setNewMembers] = useState("");
+  const [clubStrength, setClubStrength] = useState("");
+  const [boardMembers, setBoardMembers] = useState("");
+  const [spreadsheetLink, setSpreadsheetLink] = useState("");
+  const [riPortal, setRiPortal] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [uploadedUrls, setUploadedUrls] = useState<{
+    coverImage: string | null;
+    supportingImage1: string | null;
+    supportingImage2: string | null;
+  }>({
+    coverImage: null,
+    supportingImage1: null,
+    supportingImage2: null,
+  });
 
   if (isLoading) {
     return (
@@ -47,24 +71,14 @@ export default function ReportInstallationPage() {
     );
   }
 
-  // Form State
-  const [eventName, setEventName] = useState("");
-  const [venue, setVenue] = useState("");
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [participants, setParticipants] = useState("");
-  const [newMembers, setNewMembers] = useState("");
-  const [clubStrength, setClubStrength] = useState("");
-  const [boardMembers, setBoardMembers] = useState("");
-  const [spreadsheetLink, setSpreadsheetLink] = useState("");
-  const [riPortal, setRiPortal] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date) {
       setErrorMsg("Please select a date.");
+      return;
+    }
+    if (!uploadedUrls.coverImage) {
+      setErrorMsg("Cover photo is required. Please upload a cover photo under Media & Documentation.");
       return;
     }
 
@@ -84,6 +98,9 @@ await createInstallation({
   venue: venue || "Virtual / TBD",
   incoming_president_id: profile.id,
   chief_guest: eventName || "Club Installation Board",
+  cover_image: uploadedUrls.coverImage,
+  supporting_image_1: uploadedUrls.supportingImage1,
+  supporting_image_2: uploadedUrls.supportingImage2,
 });
 
       router.push("/portal/installations");
@@ -219,6 +236,13 @@ await createInstallation({
               className="w-4 h-4 rounded border-slate-600 bg-navy-deep/60 accent-electric-blue" 
             />
             <label htmlFor="riPortal" className="text-sm text-slate-300">Current Year President Reported In RI Portal</label>
+          </div>
+
+          <div className="mt-4 p-4 rounded-xl bg-navy-deep/40 border border-slate-800">
+            <PhotoUploadGroup
+              onImagesChange={(urls) => setUploadedUrls(urls)}
+              required={true}
+            />
           </div>
           
           <div className="mt-4 pt-6 border-t border-slate-800/60 flex items-center justify-end gap-4">

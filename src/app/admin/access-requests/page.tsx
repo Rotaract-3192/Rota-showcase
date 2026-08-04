@@ -147,7 +147,7 @@ export default function AdminAccessRequestsPage() {
             cell: (req) => (
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs font-body">{req.clubName}</span>
-                {req.zone && <span className="text-[10px] text-slate-400 font-metadata">Zone {req.zone}</span>}
+                {req.zone && <span className="text-[10px] text-slate-400 font-metadata">{req.zone}</span>}
               </div>
             )
           },

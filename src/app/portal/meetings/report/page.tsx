@@ -6,11 +6,31 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Send, Loader2, Users } from "lucide-react";
 import { useCreateMeeting } from "@/mutations/meeting.mutations";
 import { useProfile } from "@/hooks/useProfile";
+import PhotoUploadGroup from "@/components/PhotoUploadGroup";
 
 export default function ReportMeetingPage() {
   const router = useRouter();
   const { club, profile, isLoading } = useProfile();
   const { mutateAsync: createMeeting, isPending } = useCreateMeeting();
+
+  // Form State
+  const [meetingTitle, setMeetingTitle] = useState("");
+  const [meetingType, setMeetingType] = useState("gbm");
+  const [participantsCount, setParticipantsCount] = useState("");
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [minutesText, setMinutesText] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [uploadedUrls, setUploadedUrls] = useState<{
+    coverImage: string | null;
+    supportingImage1: string | null;
+    supportingImage2: string | null;
+  }>({
+    coverImage: null,
+    supportingImage1: null,
+    supportingImage2: null,
+  });
 
   if (isLoading) {
     return (
@@ -47,20 +67,14 @@ export default function ReportMeetingPage() {
     );
   }
 
-  // Form State
-  const [meetingTitle, setMeetingTitle] = useState("");
-  const [meetingType, setMeetingType] = useState("gbm");
-  const [participantsCount, setParticipantsCount] = useState("");
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [minutesText, setMinutesText] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date) {
       setErrorMsg("Please choose a date.");
+      return;
+    }
+    if (!uploadedUrls.coverImage) {
+      setErrorMsg("Cover photo is required. Please upload a cover photo under Media & Documentation.");
       return;
     }
 
@@ -81,7 +95,10 @@ export default function ReportMeetingPage() {
         club_id: club.id,
         date: date,
         minutes_text: richMinutes,
-        attendees_count: parseInt(participantsCount) || 0
+        attendees_count: parseInt(participantsCount) || 0,
+        cover_image: uploadedUrls.coverImage,
+        supporting_image_1: uploadedUrls.supportingImage1,
+        supporting_image_2: uploadedUrls.supportingImage2,
       });
 
       router.push("/portal/meetings");
@@ -185,6 +202,13 @@ export default function ReportMeetingPage() {
               onChange={(e) => setMinutesText(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none resize-y" 
               placeholder="Record the minutes of the meeting here..." 
+            />
+          </div>
+
+          <div className="mt-4 p-4 rounded-xl bg-navy-deep/40 border border-slate-800">
+            <PhotoUploadGroup
+              onImagesChange={(urls) => setUploadedUrls(urls)}
+              required={true}
             />
           </div>
           

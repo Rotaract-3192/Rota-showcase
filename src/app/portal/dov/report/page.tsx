@@ -6,11 +6,31 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Send, Loader2, Users } from "lucide-react";
 import { useCreateDov } from "@/mutations/dov.mutations";
 import { useProfile } from "@/hooks/useProfile";
+import PhotoUploadGroup from "@/components/PhotoUploadGroup";
 
 export default function ReportDovPage() {
   const router = useRouter();
   const { club, profile, isLoading } = useProfile();
   const { mutateAsync: createDov, isPending } = useCreateDov();
+
+  // Form State
+  const [eventName, setEventName] = useState("");
+  const [venue, setVenue] = useState("");
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [reportLink, setReportLink] = useState("");
+  const [docsSent, setDocsSent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [uploadedUrls, setUploadedUrls] = useState<{
+    coverImage: string | null;
+    supportingImage1: string | null;
+    supportingImage2: string | null;
+  }>({
+    coverImage: null,
+    supportingImage1: null,
+    supportingImage2: null,
+  });
 
   if (isLoading) {
     return (
@@ -47,20 +67,14 @@ export default function ReportDovPage() {
     );
   }
 
-  // Form State
-  const [eventName, setEventName] = useState("");
-  const [venue, setVenue] = useState("");
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [reportLink, setReportLink] = useState("");
-  const [docsSent, setDocsSent] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date) {
       setErrorMsg("Please select a visit date.");
+      return;
+    }
+    if (!uploadedUrls.coverImage) {
+      setErrorMsg("Cover photo is required. Please upload a cover photo under Media & Documentation.");
       return;
     }
 
@@ -82,6 +96,9 @@ await createDov({
   visiting_official_id: profile.id,
   evaluation_score: 95,
   remarks: richRemarks,
+  cover_image: uploadedUrls.coverImage,
+  supporting_image_1: uploadedUrls.supportingImage1,
+  supporting_image_2: uploadedUrls.supportingImage2,
 });
 
       router.push("/portal/dov");
@@ -178,6 +195,13 @@ await createDov({
               className="w-4 h-4 rounded border-slate-600 bg-navy-deep/60 accent-electric-blue" 
             />
             <label htmlFor="docsSent" className="text-sm text-slate-300">Documents Sent to District Team Via Email</label>
+          </div>
+
+          <div className="mt-4 p-4 rounded-xl bg-navy-deep/40 border border-slate-800">
+            <PhotoUploadGroup
+              onImagesChange={(urls) => setUploadedUrls(urls)}
+              required={true}
+            />
           </div>
           
           <div className="mt-4 pt-6 border-t border-slate-800/60 flex items-center justify-end gap-4">

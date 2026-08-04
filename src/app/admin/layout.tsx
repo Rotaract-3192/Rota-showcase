@@ -56,7 +56,8 @@ export default async function AdminLayout({
             roleStrings.includes('District Admin') || 
             roleStrings.includes('District Core Team') || 
             roleStrings.includes('Super Admin') || 
-            roleStrings.includes('Admin')
+            roleStrings.includes('Admin') ||
+            roleStrings.includes('ZRR')
           ) {
             return (
   	      <AdminLayoutClient

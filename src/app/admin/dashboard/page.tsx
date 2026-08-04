@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import AdminKPICard from "@/components/admin/AdminKPICard";
 import GlassPanel from "@/components/GlassPanel";
 import { 
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "zustand/react/shallow";
+import { useAuthContext } from "@/components/providers/auth-provider";
 import { 
   AreaChart, 
   Area, 
@@ -37,10 +38,48 @@ const performanceData = [
 ];
 
 export default function AdminDashboardPage() {
-  const { stats, clubs } = useStore(useShallow((state) => ({
-    stats: state.stats,
-    clubs: state.clubs
+  const { profileData } = useAuthContext();
+  const zrrRole = profileData?.roles.find(r => r.role === 'ZRR');
+  const isSuperAdmin = profileData?.roles.some(r => 
+    ["District Admin", "District Core Team", "Super Admin", "Admin"].includes(r.role)
+  );
+  const userZone = zrrRole?.zone;
+
+  const { clubs, projects } = useStore(useShallow((state) => ({
+    clubs: state.clubs,
+    projects: state.projects
   })));
+
+  const [selectedZone, setSelectedZone] = useState<string>("All");
+
+  // Set default zone if user is ZRR
+  useEffect(() => {
+    if (!isSuperAdmin && userZone) {
+      setSelectedZone(userZone);
+    }
+  }, [userZone, isSuperAdmin]);
+
+  const activeZone = (!isSuperAdmin && userZone) ? userZone : selectedZone;
+
+  // Filter lists based on selected zone
+  const filteredClubs = activeZone === "All" ? clubs : clubs.filter(c => c.zone === activeZone);
+  const filteredProjects = activeZone === "All" ? projects : projects.filter(p => p.zone === activeZone);
+
+  // Dynamic Telemetry calculation
+  const totalClubs = filteredClubs.length;
+  const totalProjects = filteredProjects.length;
+  const totalVolunteers = filteredProjects.reduce((acc, p) => acc + (p.volunteerCount || 0), 0);
+  const volunteerHours = filteredProjects.reduce((acc, p) => acc + (p.volunteerHours || 0), 0);
+  const totalBeneficiaries = filteredProjects.reduce((acc, p) => acc + (p.beneficiaries || 0), 0);
+  const contributions = filteredProjects.reduce((acc, p) => acc + (p.contributions || 0), 0);
+
+  // Scale the velocity chart data to match the filtered scope
+  const scale = projects.length > 0 ? (filteredProjects.length / projects.length) : 1;
+  const scaledPerformanceData = performanceData.map(d => ({
+    ...d,
+    projects: Math.round(d.projects * scale),
+    volunteers: Math.round(d.volunteers * scale)
+  }));
 
   return (
     <div className="flex flex-col gap-6 max-w-[1600px] mx-auto pb-12 animate-fade-in">
@@ -50,15 +89,32 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className="font-headline text-3xl font-bold text-white tracking-tight">Mission Control</h1>
           <p className="text-slate-400 text-sm font-body mt-1">
-            District 3192 overall operational overview and telemetry.
+            District 3192 operational overview and telemetry{activeZone !== "All" && ` for Zone ${activeZone}`}.
           </p>
         </div>
+        
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 rounded-lg bg-navy-deep border border-slate-700 hover:border-slate-500 text-xs font-bold text-white transition-colors shadow-sm">
+          {/* Zone Filter Dropdown */}
+          <div className="flex flex-col gap-1 min-w-[160px]">
+            <label className="text-[9px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
+            <select
+              value={selectedZone}
+              onChange={(e) => setSelectedZone(e.target.value)}
+              disabled={!isSuperAdmin && !!userZone}
+              className="px-3 py-1.5 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none disabled:opacity-60"
+            >
+              {isSuperAdmin && <option value="All">All Zones</option>}
+              <option value="Arnava">Arnava</option>
+              <option value="Pravaha">Pravaha</option>
+              <option value="Taranga">Taranga</option>
+              <option value="Varuna">Varuna</option>
+              <option value="Sagara">Sagara</option>
+              <option value="Samudhra">Samudhra</option>
+            </select>
+          </div>
+
+          <button className="px-4 py-2 mt-4 rounded-lg bg-navy-deep border border-slate-700 hover:border-slate-500 text-xs font-bold text-white transition-colors shadow-sm">
             Download Report
-          </button>
-          <button className="px-4 py-2 rounded-lg bg-electric-blue text-navy-deep hover:bg-ocean-glow text-xs font-bold transition-colors shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-            Publish All Pending
           </button>
         </div>
       </div>
@@ -67,27 +123,27 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <AdminKPICard 
           title="Total Clubs" 
-          value={clubs.length} 
+          value={totalClubs} 
           icon={<Building2 className="w-5 h-5 text-electric-blue" />}
           trend={{ value: 2.4, label: "from last month" }}
         />
         <AdminKPICard 
           title="Total Projects" 
-          value={stats.totalProjects.toLocaleString()} 
+          value={totalProjects.toLocaleString()} 
           icon={<Layers className="w-5 h-5 text-ocean-glow" />}
           trend={{ value: 14.5, label: "from last month" }}
           glowColor="blue"
         />
         <AdminKPICard 
           title="Total Volunteers" 
-          value={stats.totalVolunteers.toLocaleString()} 
+          value={totalVolunteers.toLocaleString()} 
           icon={<Users className="w-5 h-5 text-emerald-400" />}
           trend={{ value: 8.2, label: "from last month" }}
           glowColor="white"
         />
         <AdminKPICard 
           title="Volunteer Hours" 
-          value={stats.volunteerHours.toLocaleString()} 
+          value={volunteerHours.toLocaleString()} 
           icon={<Clock className="w-5 h-5 text-amber-400" />}
           trend={{ value: 12.1, label: "from last month" }}
           glowColor="white"
@@ -98,12 +154,12 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <AdminKPICard 
           title="Beneficiaries" 
-          value={stats.totalBeneficiaries.toLocaleString()} 
+          value={totalBeneficiaries.toLocaleString()} 
           icon={<Heart className="w-5 h-5 text-rose-400" />}
         />
         <AdminKPICard 
           title="Funds Raised" 
-          value={`₹${stats.contributions.toLocaleString()}`} 
+          value={`₹${contributions.toLocaleString()}`} 
           icon={<Award className="w-5 h-5 text-emerald-500" />}
         />
         <AdminKPICard 
@@ -128,7 +184,7 @@ export default function AdminDashboardPage() {
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={scaledPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorProjects" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#00f0ff" stopOpacity={0.3}/>

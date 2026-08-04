@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     const { data: rolesData, error: rolesErr } = await supabase
       .from("member_roles")
-      .select("role")
+      .select("role, zone")
       .eq("member_id", profileData.id)
       .is("deleted_at", null);
 
@@ -37,69 +37,104 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to verify user roles" }, { status: 500 });
     }
 
-    const isAuthorized = rolesData.some((r: any) =>
+    const zrrRole = rolesData.find((r: any) => r.role === "ZRR");
+    const isSuperAdmin = rolesData.some((r: any) =>
       ["District Admin", "District Core Team", "Super Admin", "Admin"].includes(r.role)
     );
+
+    const isAuthorized = isSuperAdmin || !!zrrRole;
 
     if (!isAuthorized) {
       return NextResponse.json({ error: "Unauthorized: Admins only" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const selectedZone = searchParams.get("zone");
+    const userZone = zrrRole?.zone;
+    const filterZone = (!isSuperAdmin && userZone) ? userZone : selectedZone;
+
     // Fetch reports from all 4 tables in parallel
+    let meetingsQuery = supabase
+      .from("meetings")
+      .select(`
+        id,
+        date,
+        minutes_text,
+        attendees_count,
+        audio_url,
+        transcript_text,
+        created_at,
+        cover_image,
+        supporting_image_1,
+        supporting_image_2,
+        clubs!inner ( name, zone )
+      `)
+      .is("deleted_at", null)
+      .order("date", { ascending: false });
+
+    let orientationsQuery = supabase
+      .from("orientations")
+      .select(`
+        id,
+        date,
+        speaker_name,
+        new_members_inducted,
+        remarks,
+        created_at,
+        cover_image,
+        supporting_image_1,
+        supporting_image_2,
+        clubs!inner ( name, zone )
+      `)
+      .is("deleted_at", null)
+      .order("date", { ascending: false });
+
+    let installationsQuery = supabase
+      .from("installations")
+      .select(`
+        id,
+        date,
+        venue,
+        chief_guest,
+        created_at,
+        cover_image,
+        supporting_image_1,
+        supporting_image_2,
+        clubs!inner ( name, zone ),
+        incoming_president:member_profiles!incoming_president_id ( first_name, last_name )
+      `)
+      .is("deleted_at", null)
+      .order("date", { ascending: false });
+
+    let dovsQuery = supabase
+      .from("dovs")
+      .select(`
+        id,
+        date,
+        evaluation_score,
+        remarks,
+        created_at,
+        cover_image,
+        supporting_image_1,
+        supporting_image_2,
+        clubs!inner ( name, zone ),
+        visiting_official:member_profiles!visiting_official_id ( first_name, last_name )
+      `)
+      .is("deleted_at", null)
+      .order("date", { ascending: false });
+
+    if (filterZone && filterZone !== "All") {
+      meetingsQuery = meetingsQuery.eq("clubs.zone", filterZone);
+      orientationsQuery = orientationsQuery.eq("clubs.zone", filterZone);
+      installationsQuery = installationsQuery.eq("clubs.zone", filterZone);
+      dovsQuery = dovsQuery.eq("clubs.zone", filterZone);
+    }
+
     const [meetingsRes, orientationsRes, installationsRes, dovsRes] = await Promise.all([
-      supabase
-        .from("meetings")
-        .select(`
-          id,
-          date,
-          minutes_text,
-          attendees_count,
-          audio_url,
-          transcript_text,
-          created_at,
-          clubs ( name )
-        `)
-        .is("deleted_at", null)
-        .order("date", { ascending: false }),
-      supabase
-        .from("orientations")
-        .select(`
-          id,
-          date,
-          speaker_name,
-          new_members_inducted,
-          remarks,
-          created_at,
-          clubs ( name )
-        `)
-        .is("deleted_at", null)
-        .order("date", { ascending: false }),
-      supabase
-        .from("installations")
-        .select(`
-          id,
-          date,
-          venue,
-          chief_guest,
-          created_at,
-          clubs ( name ),
-          incoming_president:member_profiles!incoming_president_id ( first_name, last_name )
-        `)
-        .is("deleted_at", null)
-        .order("date", { ascending: false }),
-      supabase
-        .from("dovs")
-        .select(`
-          id,
-          date,
-          evaluation_score,
-          remarks,
-          created_at,
-          clubs ( name ),
-          visiting_official:member_profiles!visiting_official_id ( first_name, last_name )
-        `)
-        .is("deleted_at", null)
-        .order("date", { ascending: false })
+      meetingsQuery,
+      orientationsQuery,
+      installationsQuery,
+      dovsQuery
     ]);
 
     if (meetingsRes.error) throw meetingsRes.error;

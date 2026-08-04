@@ -145,6 +145,26 @@ export default function ProjectDetailModal() {
                 and successfully met its intended milestones.
               </p>
             </div>
+
+            {(project.supportingImage1 || project.supportingImage2) && (
+              <div>
+                <h3 className="font-headline text-lg font-bold text-white mb-3 border-b border-slate-800/40 pb-2">
+                  Supporting Documentation
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  {project.supportingImage1 && (
+                    <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-800 bg-navy-deep/20">
+                      <img src={project.supportingImage1} alt="Supporting Document 1" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                    </div>
+                  )}
+                  {project.supportingImage2 && (
+                    <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-800 bg-navy-deep/20">
+                      <img src={project.supportingImage2} alt="Supporting Document 2" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar Metrics Column */}

@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import ProjectDetailModal from "@/components/ProjectDetailModal";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { StoreInitializer } from "@/components/providers/StoreInitializer";
+import { AuthProvider } from "@/components/providers/auth-provider";
 
 const libreCaslon = Libre_Caslon_Text({
   weight: ["400", "700"],
@@ -54,19 +55,21 @@ export default function RootLayout({
             {/* Store Initializer to bind DB data */}
             <StoreInitializer />
 
-            {/* Sticky Global Navigation */}
-            <Navbar />
-            
-            {/* Main Content Area */}
-            <main className="flex-grow pt-20">
-              {children}
-            </main>
-            
-            {/* Detail assessment overlay */}
-            <ProjectDetailModal />
-            
-            {/* Footer */}
-            <Footer />
+            <AuthProvider>
+              {/* Sticky Global Navigation */}
+              <Navbar />
+              
+              {/* Main Content Area */}
+              <main className="flex-grow pt-20">
+                {children}
+              </main>
+              
+              {/* Detail assessment overlay */}
+              <ProjectDetailModal />
+              
+              {/* Footer */}
+              <Footer />
+            </AuthProvider>
           </QueryProvider>
         </body>
       </html>

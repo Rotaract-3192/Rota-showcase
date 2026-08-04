@@ -37,7 +37,7 @@ export default function ProjectsPage() {
     "Environmental Support",
   ];
 
-  const zones = ["Zone 1", "Zone 2", "Zone 3"];
+  const zones = ["Arnava", "Pravaha", "Taranga", "Varuna", "Sagara", "Samudhra"];
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilter("search", e.target.value);

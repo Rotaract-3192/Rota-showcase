@@ -33,7 +33,7 @@ async function supabaseFetch(path: string, options: RequestInit = {}) {
 export async function GET() {
   try {
     const requests = await supabaseFetch(
-      '/access_requests?status=eq.PENDING&deleted_at=is.null&select=id,full_name,email,phone,requested_role,created_at,status,club_id,clubs(name)'
+      '/access_requests?status=eq.PENDING&deleted_at=is.null&select=id,full_name,email,phone,requested_role,created_at,status,club_id,zone,clubs(name)'
     );
 
     if (Array.isArray(requests) && requests.length > 0) {
@@ -140,7 +140,8 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           member_id: profileId,
           role: request.requested_role,
-          club_id: request.club_id
+          club_id: request.club_id,
+          zone: request.zone || null
         })
       });
     }

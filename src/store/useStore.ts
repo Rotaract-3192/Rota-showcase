@@ -31,6 +31,8 @@ export interface Project {
   zone: string;
   contributions: number; // in INR
   volunteerCount: number;
+  supportingImage1?: string | null;
+  supportingImage2?: string | null;
 }
 
 export interface Club {

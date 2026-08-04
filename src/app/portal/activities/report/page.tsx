@@ -8,6 +8,7 @@ import * as z from "zod";
 import { ArrowLeft, Save, Send, CheckCircle2, UploadCloud, Loader2, Users } from "lucide-react";
 import { useCreateActivity } from "@/mutations/activity.mutations";
 import { useProfile } from "@/hooks/useProfile";
+import PhotoUploadGroup from "@/components/PhotoUploadGroup";
 
 // Form Schema Definition
 const reportSchema = z.object({
@@ -58,9 +59,43 @@ export default function ReportActivityPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedUrls, setUploadedUrls] = useState<{
+    coverImage: string | null;
+    supportingImage1: string | null;
+    supportingImage2: string | null;
+  }>({
+    coverImage: null,
+    supportingImage1: null,
+    supportingImage2: null,
+  });
   const { club, isLoading } = useProfile();
   const { mutateAsync: createActivity, isPending } = useCreateActivity();
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    trigger,
+    formState: { errors },
+  } = useForm<ReportFormValues>({
+    resolver: zodResolver(reportSchema) as any,
+    defaultValues: {
+      avenues: [],
+      focusAreas: [],
+      activityType: "Standalone",
+      sameAsStart: false,
+      externalNGO: false,
+      submitForPublication: false,
+      featureActivity: false,
+      activityExpenses: 0,
+      cashContribution: 0,
+      inKindContribution: 0,
+    },
+  });
+
+  const sameAsStart = watch("sameAsStart");
+  const externalNGO = watch("externalNGO");
 
   if (isLoading) {
     return (
@@ -97,32 +132,6 @@ export default function ReportActivityPage() {
     );
   }
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    trigger,
-    formState: { errors },
-  } = useForm<ReportFormValues>({
-    resolver: zodResolver(reportSchema) as any,
-    defaultValues: {
-      avenues: [],
-      focusAreas: [],
-      activityType: "Standalone",
-      sameAsStart: false,
-      externalNGO: false,
-      submitForPublication: false,
-      featureActivity: false,
-      activityExpenses: 0,
-      cashContribution: 0,
-      inKindContribution: 0,
-    },
-  });
-
-  const sameAsStart = watch("sameAsStart");
-  const externalNGO = watch("externalNGO");
-
   const nextStep = async () => {
     // We could trigger validation for specific fields per step here
     // For simplicity, we just allow advancing until final submit where Zod catches everything
@@ -147,11 +156,22 @@ export default function ReportActivityPage() {
       return;
     }
 
+    if (!uploadedUrls.coverImage) {
+      setErrorMsg("Cover photo is required. Please upload a cover photo in Step 5.");
+      return;
+    }
+
     try {
       setErrorMsg("");
+
+      // Generate a URL-friendly slug
+      const slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
+
       const payload: any = {
         club_id: club.id,
         title: data.title,
+        slug: slug,
+        type: data.activityType === "Standalone" ? "PROJECT" : "EVENT",
         description: data.description,
         status: "DRAFT",
         activity_category: data.activityType,
@@ -172,6 +192,9 @@ export default function ReportActivityPage() {
         start_time: new Date(data.startDate).toISOString(),
         end_time: new Date(data.sameAsStart ? data.startDate : (data.endDate || data.startDate)).toISOString(),
         venue: data.venue,
+        cover_image: uploadedUrls.coverImage,
+        supporting_image_1: uploadedUrls.supportingImage1,
+        supporting_image_2: uploadedUrls.supportingImage2,
       };
 
       await createActivity(payload);
@@ -455,24 +478,10 @@ export default function ReportActivityPage() {
           
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Upload Photos</label>
-              <label className="border-2 border-dashed border-slate-700/80 rounded-2xl p-12 flex flex-col items-center justify-center bg-navy-deep/30 hover:bg-navy-deep/50 transition-colors cursor-pointer group relative">
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      setSelectedFile(e.target.files[0]);
-                    }
-                  }} 
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                />
-                <UploadCloud className="w-10 h-10 text-slate-500 group-hover:text-electric-blue mb-4 transition-colors" />
-                <p className="text-sm text-slate-300 font-bold">
-                  {selectedFile ? selectedFile.name : "Click to upload or drag and drop"}
-                </p>
-                <p className="text-xs text-slate-500 mt-1 font-body">SVG, PNG, JPG or GIF (max. 800x400px)</p>
-              </label>
+              <PhotoUploadGroup
+                onImagesChange={(urls) => setUploadedUrls(urls)}
+                required={true}
+              />
             </div>
 
             <div className="flex flex-col gap-4 p-5 rounded-xl bg-navy-deep/50 border border-slate-800/60">

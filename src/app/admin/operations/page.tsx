@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import GlassPanel from "@/components/GlassPanel";
+import { useAuthContext } from "@/components/providers/auth-provider";
 import { 
   Briefcase, 
   Users, 
@@ -61,10 +62,25 @@ interface DOV {
 type TabType = "meetings" | "orientations" | "installations" | "dovs";
 
 export default function AdminOperationsPage() {
+  const { profileData } = useAuthContext();
+  const zrrRole = profileData?.roles.find(r => r.role === 'ZRR');
+  const isSuperAdmin = profileData?.roles.some(r => 
+    ["District Admin", "District Core Team", "Super Admin", "Admin"].includes(r.role)
+  );
+  const userZone = zrrRole?.zone;
+
   const [activeTab, setActiveTab] = useState<TabType>("meetings");
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedZone, setSelectedZone] = useState<string>("All");
+
+  // Set default zone if user is ZRR
+  useEffect(() => {
+    if (!isSuperAdmin && userZone) {
+      setSelectedZone(userZone);
+    }
+  }, [userZone, isSuperAdmin]);
 
   // Data States
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -83,7 +99,9 @@ export default function AdminOperationsPage() {
       try {
         setLoading(true);
         setErrorMsg("");
-        const res = await fetch("/api/admin/operations");
+        
+        const filter = (!isSuperAdmin && userZone) ? userZone : selectedZone;
+        const res = await fetch(`/api/admin/operations?zone=${encodeURIComponent(filter)}`);
         if (!res.ok) {
           const err = await res.json();
           throw new Error(err.error || "Failed to load operations reports");
@@ -101,7 +119,7 @@ export default function AdminOperationsPage() {
       }
     }
     fetchData();
-  }, []);
+  }, [selectedZone, userZone, isSuperAdmin]);
 
   const getFilteredData = () => {
     const query = searchQuery.toLowerCase();
@@ -146,6 +164,25 @@ export default function AdminOperationsPage() {
           <p className="text-slate-400 text-sm font-body mt-1">
             Review submitted logs for club meetings, orientations, officer installations, and official visits (DOVs).
           </p>
+        </div>
+
+        {/* Zone Filter Dropdown */}
+        <div className="flex flex-col gap-1.5 min-w-[180px]">
+          <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
+          <select
+            value={selectedZone}
+            onChange={(e) => setSelectedZone(e.target.value)}
+            disabled={!isSuperAdmin && !!userZone}
+            className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none disabled:opacity-60"
+          >
+            {isSuperAdmin && <option value="All">All Zones</option>}
+            <option value="Arnava">Arnava</option>
+            <option value="Pravaha">Pravaha</option>
+            <option value="Taranga">Taranga</option>
+            <option value="Varuna">Varuna</option>
+            <option value="Sagara">Sagara</option>
+            <option value="Samudhra">Samudhra</option>
+          </select>
         </div>
       </div>
 
@@ -452,6 +489,44 @@ export default function AdminOperationsPage() {
                     <div className="p-3 bg-navy-deep rounded border border-slate-800/80 text-xs leading-relaxed whitespace-pre-wrap break-words">
                       {selectedItem.data.remarks || "No remarks provided"}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {(selectedItem.data.cover_image || selectedItem.data.supporting_image_1 || selectedItem.data.supporting_image_2) && (
+                <div className="mt-6 pt-6 border-t border-slate-800/60">
+                  <span className="text-[10px] font-metadata font-bold text-slate-500 uppercase block mb-3">Photo Documentation</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {selectedItem.data.cover_image && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] text-slate-500 font-metadata uppercase font-bold">Cover Photo</span>
+                        <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-800 bg-navy-deep/40">
+                          <a href={selectedItem.data.cover_image} target="_blank" rel="noreferrer">
+                            <img src={selectedItem.data.cover_image} alt="Cover" className="w-full h-full object-cover hover:opacity-80 transition-opacity" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.data.supporting_image_1 && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] text-slate-500 font-metadata uppercase font-bold">Supporting Photo 1</span>
+                        <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-800 bg-navy-deep/40">
+                          <a href={selectedItem.data.supporting_image_1} target="_blank" rel="noreferrer">
+                            <img src={selectedItem.data.supporting_image_1} alt="Supporting 1" className="w-full h-full object-cover hover:opacity-80 transition-opacity" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.data.supporting_image_2 && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] text-slate-500 font-metadata uppercase font-bold">Supporting Photo 2</span>
+                        <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-800 bg-navy-deep/40">
+                          <a href={selectedItem.data.supporting_image_2} target="_blank" rel="noreferrer">
+                            <img src={selectedItem.data.supporting_image_2} alt="Supporting 2" className="w-full h-full object-cover hover:opacity-80 transition-opacity" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

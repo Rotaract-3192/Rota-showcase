@@ -13,7 +13,8 @@ export function useAuth() {
     switch (primaryRole) {
       case 'Super Admin':
       case 'District':
-        return '/district/dashboard';
+      case 'ZRR':
+        return '/admin/dashboard';
       case 'President':
       case 'Board Member':
       case 'General Member':
@@ -43,6 +44,7 @@ export function useAuth() {
           const roleNames = (roles || []).map(r => r.role);
           let primaryRole = 'General Member';
           if (roleNames.includes('District')) primaryRole = 'District';
+          else if (roleNames.includes('ZRR')) primaryRole = 'ZRR';
           else if (roleNames.includes('President')) primaryRole = 'President';
           
           router.push(getDashboardRoute(primaryRole));

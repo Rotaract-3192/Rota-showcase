@@ -42,7 +42,7 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [zone, setZone] = useState("1");
+  const [zone, setZone] = useState("Arnava");
   
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -203,9 +203,12 @@ export default function LoginPage() {
                       onChange={(e) => setZone(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-xs text-slate-200 placeholder-slate-600 focus:outline-none transition-all"
                     >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
+                      <option value="Arnava">Arnava</option>
+                      <option value="Pravaha">Pravaha</option>
+                      <option value="Taranga">Taranga</option>
+                      <option value="Varuna">Varuna</option>
+                      <option value="Sagara">Sagara</option>
+                      <option value="Samudhra">Samudhra</option>
                     </select>
                   </div>
 
@@ -220,6 +223,7 @@ export default function LoginPage() {
                       <option value="President">President</option>
                       <option value="Vice President">Vice President</option>
                       <option value="Secretary">Secretary</option>
+                      <option value="ZRR">Zone Rotaract Representative (ZRR)</option>
                     </select>
                   </div>
 

@@ -69,7 +69,8 @@ export default async function SyncPage() {
             roleStrings.includes('District Admin') || 
             roleStrings.includes('District Core Team') || 
             roleStrings.includes('Super Admin') || 
-            roleStrings.includes('Admin')
+            roleStrings.includes('Admin') ||
+            roleStrings.includes('ZRR')
           ) {
             targetPath = '/admin/dashboard';
           } else {
