@@ -49,3 +49,17 @@ export function useActivity(id: string) {
     enabled: !!id,
   });
 }
+
+export function useDeleteActivity() {
+  return {
+    mutateAsync: async (id: string) => {
+      const res = await fetch(`/api/activities/${id}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        throw new Error("Failed to delete activity");
+      }
+      return res.json();
+    }
+  };
+}

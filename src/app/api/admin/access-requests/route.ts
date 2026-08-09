@@ -79,6 +79,16 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const email = user.emailAddresses[0]?.emailAddress;
+    
+    // Fetch the admin's profile ID to record as actor_id
+    const adminProfiles = await supabaseFetch(`/member_profiles?email=eq.${encodeURIComponent(email || '')}&select=id`);
+    const adminProfileId = (adminProfiles && adminProfiles.length > 0) ? adminProfiles[0].id : null;
+
     const { requestId, action } = await req.json();
 
     if (!requestId || !action) {
@@ -144,6 +154,18 @@ export async function POST(req: NextRequest) {
           zone: request.zone || null
         })
       });
+
+      // Send in-app notification
+      await supabaseFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          auth_id: `pending_${request.email}`,
+          title: 'Access Request Approved',
+          message: `Your request for the role ${request.requested_role} has been approved. Welcome to the portal!`,
+          link: '/portal',
+          is_read: false
+        })
+      });
     }
 
     // 5. Update status in access_requests
@@ -154,11 +176,10 @@ export async function POST(req: NextRequest) {
     });
 
     // 6. Log action in audit_logs
-    const actorId = '5057e100-0000-4000-8000-000000000001'; // Default system actor ID
     await supabaseFetch('/audit_logs', {
       method: 'POST',
       body: JSON.stringify({
-        actor_id: actorId,
+        actor_id: adminProfileId,
         action: action === 'Approved' ? 'APPROVE_ACCESS' : 'REJECT_ACCESS',
         table_name: 'access_requests',
         record_id: requestId,

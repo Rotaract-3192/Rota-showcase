@@ -13,7 +13,10 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 import { Plus, Search, ArrowUpDown, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
-import { useActivityList } from "@/queries/activity.queries";
+import { useActivityList, useDeleteActivity, activityKeys } from "@/queries/activity.queries";
+import { useQueryClient } from "@tanstack/react-query";
+import ActivityDetailModal from "@/components/ActivityDetailModal";
+import { useRouter } from "next/navigation";
 
 interface Project {
   id: string;
@@ -25,6 +28,9 @@ interface Project {
 }
 
 export default function ActivitiesPage() {
+  const router = useRouter();
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+
   const { data: listResult, isLoading } = useActivityList({
     pagination: { page: 1, pageSize: 50 },
     sort: { column: "start_time", ascending: false }
@@ -103,19 +109,45 @@ export default function ActivitiesPage() {
     },
     {
       id: "actions",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 justify-end">
-          <button className="p-1.5 text-slate-400 hover:text-ocean-glow transition-colors">
-            <Eye className="w-4 h-4" />
-          </button>
-          <button className="p-1.5 text-slate-400 hover:text-electric-blue transition-colors">
-            <Edit className="w-4 h-4" />
-          </button>
-          <button className="p-1.5 text-slate-400 hover:text-red-400 transition-colors">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const queryClient = useQueryClient();
+        const deleteActivity = useDeleteActivity();
+        const id = row.original.id;
+
+        const handleDelete = async () => {
+          if (window.confirm(`Are you sure you want to delete ${row.original.title}? This action cannot be undone.`)) {
+            try {
+              await deleteActivity.mutateAsync(id);
+              queryClient.invalidateQueries({ queryKey: activityKeys.all });
+            } catch (err) {
+              console.error(err);
+              alert("Failed to delete activity.");
+            }
+          }
+        };
+
+        const handleView = () => {
+          setSelectedActivityId(id);
+        };
+
+        const handleEdit = () => {
+          router.push(`/portal/activities/report?edit=${id}`);
+        };
+
+        return (
+          <div className="flex items-center gap-2 justify-end">
+            <button onClick={handleView} className="p-1.5 text-slate-400 hover:text-ocean-glow transition-colors">
+              <Eye className="w-4 h-4" />
+            </button>
+            <button onClick={handleEdit} className="p-1.5 text-slate-400 hover:text-electric-blue transition-colors">
+              <Edit className="w-4 h-4" />
+            </button>
+            <button onClick={handleDelete} className="p-1.5 text-slate-400 hover:text-red-400 transition-colors">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      },
     },
   ], []);
 
@@ -232,6 +264,13 @@ export default function ActivitiesPage() {
         </div>
 
       </div>
+
+      {selectedActivityId && (
+        <ActivityDetailModal 
+          activityId={selectedActivityId} 
+          onClose={() => setSelectedActivityId(null)} 
+        />
+      )}
     </div>
   );
 }

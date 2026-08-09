@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
     const userZone = zrrRole?.zone;
     const filterZone = (!isSuperAdmin && userZone) ? userZone : selectedZone;
 
-    let path = '/activities?select=id,title,status,created_at,type,start_time,description,venue,clubs!inner(name,zone)&deleted_at=is.null';
+    let path = '/activities?select=id,title,status,created_at,type,start_time,description,venue,cover_image,supporting_image_1,supporting_image_2,beneficiaries,volunteer_hours,activity_expenses,volunteers,avenues,focus_areas,clubs!inner(name,zone)&deleted_at=is.null';
     if (filterZone && filterZone !== 'All') {
       path += `&clubs.zone=eq.${encodeURIComponent(filterZone)}`;
     }
@@ -84,6 +84,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const email = user.emailAddresses[0]?.emailAddress;
+    
+    // Fetch the admin's profile ID to record as actor_id
+    const adminProfiles = await supabaseFetch(`/member_profiles?email=eq.${encodeURIComponent(email || '')}&select=id`);
+    const adminProfileId = (adminProfiles && adminProfiles.length > 0) ? adminProfiles[0].id : null;
+
     const { activityId, action } = await req.json();
 
     if (!activityId || !action) {
@@ -97,6 +107,44 @@ export async function POST(req: NextRequest) {
       method: 'PATCH',
       body: JSON.stringify({ status: newStatus })
     });
+
+    // Log action in audit_logs
+    await supabaseFetch('/audit_logs', {
+      method: 'POST',
+      body: JSON.stringify({
+        actor_id: adminProfileId,
+        action: action === 'Approved' ? 'UPDATE' : 'REJECT_ACTIVITY', // We can use UPDATE or APPROVE_ACTIVITY
+        table_name: 'activities',
+        record_id: activityId,
+        new_data: JSON.stringify({ status: newStatus })
+      })
+    });
+
+    // Notify the club officers
+    const activity = await supabaseFetch(`/activities?id=eq.${activityId}&select=club_id,title`);
+    if (activity && activity.length > 0 && activity[0].club_id) {
+      const clubId = activity[0].club_id;
+      const title = activity[0].title;
+      // Fetch leaders (President, Secretary) of this club
+      const leaders = await supabaseFetch(`/member_roles?club_id=eq.${clubId}&role=in.("President","Secretary")&select=member_profiles!inner(auth_id)&deleted_at=is.null`);
+      
+      if (leaders && leaders.length > 0) {
+        for (const leader of leaders) {
+          if (leader.member_profiles?.auth_id) {
+            await supabaseFetch('/notifications', {
+              method: 'POST',
+              body: JSON.stringify({
+                auth_id: leader.member_profiles.auth_id,
+                title: action === 'Approved' ? 'Activity Approved' : 'Activity Rejected',
+                message: `Your activity "${title}" has been ${action.toLowerCase()}.`,
+                link: '/admin/activities',
+                is_read: false
+              })
+            });
+          }
+        }
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

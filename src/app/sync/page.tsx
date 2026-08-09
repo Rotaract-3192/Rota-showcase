@@ -52,6 +52,12 @@ export default async function SyncPage() {
             headers,
             body: JSON.stringify({ auth_id: userId })
           });
+          
+          await fetch(`${supabaseUrl}/rest/v1/notifications?auth_id=eq.pending_${email}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify({ auth_id: userId })
+          });
         }
 
         // 2. Fetch roles (exclude soft-deleted)

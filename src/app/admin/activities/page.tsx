@@ -17,6 +17,15 @@ interface Activity {
   priority: 'High' | 'Normal';
   description: string;
   venue: string;
+  coverImage?: string;
+  supportingImage1?: string;
+  supportingImage2?: string;
+  beneficiaries?: number;
+  volunteerHours?: number;
+  activityExpenses?: number;
+  volunteers?: number;
+  avenues?: string[];
+  focusAreas?: string[];
 }
 
 export default function AdminActivitiesPage() {
@@ -59,7 +68,16 @@ export default function AdminActivitiesPage() {
           status: (act.status === 'PUBLISHED' ? 'Approved' : act.status === 'CANCELLED' ? 'Cancelled' : 'Pending') as 'Approved' | 'Pending' | 'Cancelled',
           priority: (act.status === 'DRAFT' ? 'High' : 'Normal') as 'High' | 'Normal',
           description: act.description || "No description provided.",
-          venue: act.venue || "Virtual / No venue details"
+          venue: act.venue || "Virtual / No venue details",
+          coverImage: act.cover_image,
+          supportingImage1: act.supporting_image_1,
+          supportingImage2: act.supporting_image_2,
+          beneficiaries: act.beneficiaries || 0,
+          volunteerHours: act.volunteer_hours || 0,
+          activityExpenses: act.activity_expenses || 0,
+          volunteers: act.volunteers || 0,
+          avenues: act.avenues || [],
+          focusAreas: act.focus_areas || []
         }));
         setActivities(mapped);
       }
@@ -98,8 +116,39 @@ export default function AdminActivitiesPage() {
     }
   };
 
-  const downloadSingleActivityReport = (act: Activity) => {
-    const reportContent = `ROTARACT DISTRICT 3192 - OFFICIAL ACTIVITY REPORT
+  const downloadSingleActivityReport = async (act: Activity, format: 'txt' | 'pdf' = 'txt') => {
+    if (format === 'pdf') {
+      const { default: jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("ROTARACT DISTRICT 3192 - OFFICIAL ACTIVITY REPORT", 14, 20);
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Title: ${act.title}`, 14, 30);
+      doc.text(`Club: ${act.club}`, 14, 40);
+      doc.text(`Type: ${act.type}`, 14, 50);
+      doc.text(`Date: ${act.date}`, 14, 60);
+      doc.text(`Venue: ${act.venue}`, 14, 70);
+      doc.text(`Status: ${act.status}`, 14, 80);
+      
+      doc.setFont("helvetica", "bold");
+      doc.text("DESCRIPTION:", 14, 100);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const splitDesc = doc.splitTextToSize(act.description, 180);
+      doc.text(splitDesc, 14, 110);
+      
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}`, 14, 280);
+      
+      doc.save(`Activity_Report_${act.title.replace(/[^a-z0-9]/gi, '_')}.pdf`);
+    } else {
+      const reportContent = `ROTARACT DISTRICT 3192 - OFFICIAL ACTIVITY REPORT
 ==================================================
 Title:       ${act.title}
 Club:        ${act.club}
@@ -115,39 +164,57 @@ ${act.description}
 --------------------------------------------------
 Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
 `;
-    const blob = new Blob([reportContent], { type: "text/plain;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Activity_Report_${act.title.replace(/[^a-z0-9]/gi, '_')}.txt`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = new Blob([reportContent], { type: "text/plain;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Activity_Report_${act.title.replace(/[^a-z0-9]/gi, '_')}.txt`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
-  const exportActivitiesCSV = () => {
+  const exportActivities = async (format: 'csv' | 'pdf' = 'csv') => {
     const headers = ["ID", "Title", "Club", "Type", "Date", "Venue", "Status", "Description"];
     const rows = filteredActivities.map(act => [
       act.id,
-      `"${act.title.replace(/"/g, '""')}"`,
-      `"${act.club.replace(/"/g, '""')}"`,
+      act.title,
+      act.club,
       act.type,
       act.date,
-      `"${act.venue.replace(/"/g, '""')}"`,
+      act.venue,
       act.status,
-      `"${act.description.replace(/"/g, '""')}"`
+      act.description.substring(0, 500) + (act.description.length > 500 ? "..." : "")
     ]);
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `District_3192_Activities_Review_Queue.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    if (format === 'pdf') {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+      const doc = new jsPDF("landscape");
+      doc.text("District 3192 Activities Review Queue", 14, 15);
+      autoTable(doc, {
+        head: [headers],
+        body: rows,
+        startY: 20,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [0, 240, 255], textColor: [11, 17, 32] },
+      });
+      doc.save("District_3192_Activities_Review_Queue.pdf");
+    } else {
+      const csvRows = rows.map(r => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
+      const csvContent = [headers.join(","), ...csvRows.map((r: any) => r.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `District_3192_Activities_Review_Queue.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const pendingCount = activities.filter(a => a.status === 'Pending').length;
@@ -219,10 +286,16 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
           <h3 className="font-headline text-lg font-bold text-white">Submission Queue</h3>
           <div className="flex items-center gap-3">
             <button 
-              onClick={exportActivitiesCSV}
+              onClick={() => exportActivities('csv')}
               className="px-3 py-2 flex items-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-metadata transition-colors cursor-pointer"
             >
-              <FileDown className="w-3.5 h-3.5" /> Export Queue CSV
+              <FileDown className="w-3.5 h-3.5" /> Export Queue (CSV)
+            </button>
+            <button 
+              onClick={() => exportActivities('pdf')}
+              className="px-3 py-2 flex items-center gap-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold font-metadata transition-colors cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5" /> Export Queue (PDF)
             </button>
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-electric-blue transition-colors" />
@@ -356,7 +429,49 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
                   <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold block">Activity ID</span>
                   <span className="text-slate-400 font-metadata text-[10px] select-all">{selectedActivity.id}</span>
                 </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold block">Beneficiaries</span>
+                  <span className="text-slate-200">{selectedActivity.beneficiaries}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold block">Volunteers / Hours</span>
+                  <span className="text-slate-200">{selectedActivity.volunteers} vols / {selectedActivity.volunteerHours} hrs</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold block">Project Cost (INR)</span>
+                  <span className="text-slate-200">₹{selectedActivity.activityExpenses}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold block">Avenues & Focus</span>
+                  <span className="text-slate-200">
+                    {[...(selectedActivity.avenues || []), ...(selectedActivity.focusAreas || [])].join(", ") || "N/A"}
+                  </span>
+                </div>
               </div>
+
+              {/* Photos */}
+              {(selectedActivity.coverImage || selectedActivity.supportingImage1 || selectedActivity.supportingImage2) && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Uploaded Photos</span>
+                  <div className="flex gap-4 overflow-x-auto custom-scrollbar pb-2">
+                    {selectedActivity.coverImage && (
+                      <div className="h-32 min-w-48 rounded-lg overflow-hidden border border-slate-700 shrink-0">
+                        <img src={selectedActivity.coverImage} className="w-full h-full object-cover" alt="Cover" />
+                      </div>
+                    )}
+                    {selectedActivity.supportingImage1 && (
+                      <div className="h-32 min-w-48 rounded-lg overflow-hidden border border-slate-700 shrink-0">
+                        <img src={selectedActivity.supportingImage1} className="w-full h-full object-cover" alt="Support 1" />
+                      </div>
+                    )}
+                    {selectedActivity.supportingImage2 && (
+                      <div className="h-32 min-w-48 rounded-lg overflow-hidden border border-slate-700 shrink-0">
+                        <img src={selectedActivity.supportingImage2} className="w-full h-full object-cover" alt="Support 2" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Description / Report Logs</span>
@@ -367,12 +482,20 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
             </div>
 
             <div className="flex items-center justify-end gap-3 border-t border-slate-800/60 pt-4 mt-2">
-              <button
-                onClick={() => downloadSingleActivityReport(selectedActivity)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-metadata transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <FileDown className="w-4 h-4" /> Download Report (.txt)
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => downloadSingleActivityReport(selectedActivity, 'txt')}
+                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-metadata transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileDown className="w-4 h-4" /> Export (.txt)
+                </button>
+                <button
+                  onClick={() => downloadSingleActivityReport(selectedActivity, 'pdf')}
+                  className="px-4 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold font-metadata transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileDown className="w-4 h-4" /> Export (.pdf)
+                </button>
+              </div>
 
               {selectedActivity.status === 'Pending' && (
                 <button

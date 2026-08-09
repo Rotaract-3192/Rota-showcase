@@ -23,8 +23,25 @@ export default function AdminReportsPage() {
     setTimeout(() => setSuccessMsg(""), 4000);
   };
 
-  const handleExportClubs = async () => {
-    setDownloading("clubs");
+  const downloadPDF = async (headers: string[], rows: any[][], title: string, filename: string) => {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF("landscape");
+    doc.text(title, 14, 15);
+    autoTable(doc, {
+      head: [headers],
+      body: rows,
+      startY: 20,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 240, 255], textColor: [11, 17, 32] },
+    });
+    doc.save(filename);
+    setSuccessMsg(`Downloaded ${filename} successfully!`);
+    setTimeout(() => setSuccessMsg(""), 4000);
+  };
+
+  const handleExportClubs = async (format: 'csv' | 'pdf') => {
+    setDownloading(`clubs-${format}`);
     try {
       const res = await fetch('/api/admin/reports?type=clubs');
       if (!res.ok) throw new Error("Failed to fetch reports");
@@ -33,7 +50,7 @@ export default function AdminReportsPage() {
       const headers = ["Club ID", "Club Name", "Charter Date", "Status", "Member Count", "Total Projects", "Total Points"];
       const rows = data.map((c: any) => [
         c.id,
-        `"${c.name.replace(/"/g, '""')}"`,
+        c.name,
         c.charterDate,
         c.status,
         c.memberCount,
@@ -41,8 +58,13 @@ export default function AdminReportsPage() {
         c.totalPoints
       ]);
 
-      const csvContent = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
-      downloadCSV(csvContent, "District_3192_Clubs_Directory.csv");
+      if (format === 'csv') {
+        const csvRows = rows.map(r => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
+        const csvContent = [headers.join(","), ...csvRows.map((r: any) => r.join(","))].join("\n");
+        downloadCSV(csvContent, "District_3192_Clubs_Directory.csv");
+      } else {
+        await downloadPDF(headers, rows, "District 3192 Clubs Directory", "District_3192_Clubs_Directory.pdf");
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to export clubs data.");
@@ -51,8 +73,8 @@ export default function AdminReportsPage() {
     }
   };
 
-  const handleExportProjects = async () => {
-    setDownloading("projects");
+  const handleExportProjects = async (format: 'csv' | 'pdf') => {
+    setDownloading(`projects-${format}`);
     try {
       const res = await fetch('/api/admin/reports?type=projects');
       if (!res.ok) throw new Error("Failed to fetch reports");
@@ -61,17 +83,22 @@ export default function AdminReportsPage() {
       const headers = ["ID", "Title", "Type", "Status", "Club Name", "Start Date", "Venue", "Description"];
       const rows = data.map((p: any) => [
         p.id,
-        `"${p.title.replace(/"/g, '""')}"`,
+        p.title,
         p.type,
         p.status,
-        `"${p.clubName.replace(/"/g, '""')}"`,
+        p.clubName,
         p.startDate,
-        `"${p.venue.replace(/"/g, '""')}"`,
-        `"${p.description.replace(/"/g, '""').substring(0, 1000)}"` // Limit description length in CSV to avoid breaking cells
+        p.venue,
+        p.description.substring(0, 500) + (p.description.length > 500 ? "..." : "")
       ]);
 
-      const csvContent = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
-      downloadCSV(csvContent, "District_3192_Projects_Telemetry.csv");
+      if (format === 'csv') {
+        const csvRows = rows.map(r => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
+        const csvContent = [headers.join(","), ...csvRows.map((r: any) => r.join(","))].join("\n");
+        downloadCSV(csvContent, "District_3192_Projects_Telemetry.csv");
+      } else {
+        await downloadPDF(headers, rows, "District 3192 Projects Telemetry", "District_3192_Projects_Telemetry.pdf");
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to export projects telemetry.");
@@ -80,8 +107,8 @@ export default function AdminReportsPage() {
     }
   };
 
-  const handleExportLeaderboard = async () => {
-    setDownloading("leaderboard");
+  const handleExportLeaderboard = async (format: 'csv' | 'pdf') => {
+    setDownloading(`leaderboard-${format}`);
     try {
       const res = await fetch('/api/admin/reports?type=leaderboard');
       if (!res.ok) throw new Error("Failed to fetch reports");
@@ -91,12 +118,17 @@ export default function AdminReportsPage() {
       const rows = data.map((c: any, idx: number) => [
         idx + 1,
         c.clubId,
-        `"${c.clubName.replace(/"/g, '""')}"`,
+        c.clubName,
         c.points
       ]);
 
-      const csvContent = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
-      downloadCSV(csvContent, "District_3192_Leaderboard_Audit.csv");
+      if (format === 'csv') {
+        const csvRows = rows.map(r => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
+        const csvContent = [headers.join(","), ...csvRows.map((r: any) => r.join(","))].join("\n");
+        downloadCSV(csvContent, "District_3192_Leaderboard_Audit.csv");
+      } else {
+        await downloadPDF(headers, rows, "District 3192 Leaderboard Audit", "District_3192_Leaderboard_Audit.pdf");
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to export leaderboard standings.");
@@ -142,21 +174,30 @@ export default function AdminReportsPage() {
           <p className="text-xs text-slate-300 font-body leading-relaxed flex-1">
             Export a full directory of all active and inactive clubs in District 3192 including member counts, chartered dates, status, and points.
           </p>
-          <button 
-            onClick={handleExportClubs}
-            disabled={downloading !== null}
-            className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-metadata transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            {downloading === 'clubs' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Compiling CSV...
-              </>
-            ) : (
-              <>
-                <FileDown className="w-4 h-4" /> Download CSV
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => handleExportClubs('csv')}
+              disabled={downloading !== null}
+              className="flex-1 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-metadata transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {downloading === 'clubs-csv' ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> CSV...</>
+              ) : (
+                <><FileDown className="w-4 h-4" /> CSV</>
+              )}
+            </button>
+            <button 
+              onClick={() => handleExportClubs('pdf')}
+              disabled={downloading !== null}
+              className="flex-1 py-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold font-metadata transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {downloading === 'clubs-pdf' ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> PDF...</>
+              ) : (
+                <><FileDown className="w-4 h-4" /> PDF</>
+              )}
+            </button>
+          </div>
         </GlassPanel>
 
         {/* Project Telemetry Dump */}
@@ -173,21 +214,30 @@ export default function AdminReportsPage() {
           <p className="text-xs text-slate-300 font-body leading-relaxed flex-1">
             Export a compilation of all submitted activities and projects across the district. Contains statuses, venues, description logs, and parent clubs.
           </p>
-          <button 
-            onClick={handleExportProjects}
-            disabled={downloading !== null}
-            className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-metadata transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            {downloading === 'projects' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Compiling CSV...
-              </>
-            ) : (
-              <>
-                <FileDown className="w-4 h-4" /> Download CSV
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => handleExportProjects('csv')}
+              disabled={downloading !== null}
+              className="flex-1 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-metadata transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {downloading === 'projects-csv' ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> CSV...</>
+              ) : (
+                <><FileDown className="w-4 h-4" /> CSV</>
+              )}
+            </button>
+            <button 
+              onClick={() => handleExportProjects('pdf')}
+              disabled={downloading !== null}
+              className="flex-1 py-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold font-metadata transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {downloading === 'projects-pdf' ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> PDF...</>
+              ) : (
+                <><FileDown className="w-4 h-4" /> PDF</>
+              )}
+            </button>
+          </div>
         </GlassPanel>
 
         {/* Leaderboard Config Backup */}
@@ -204,21 +254,30 @@ export default function AdminReportsPage() {
           <p className="text-xs text-slate-300 font-body leading-relaxed flex-1">
             Download the point leaderboard standings of all clubs in District 3192 computed from the live transaction points ledger.
           </p>
-          <button 
-            onClick={handleExportLeaderboard}
-            disabled={downloading !== null}
-            className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-metadata transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            {downloading === 'leaderboard' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Compiling CSV...
-              </>
-            ) : (
-              <>
-                <FileDown className="w-4 h-4" /> Download CSV
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => handleExportLeaderboard('csv')}
+              disabled={downloading !== null}
+              className="flex-1 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-metadata transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {downloading === 'leaderboard-csv' ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> CSV...</>
+              ) : (
+                <><FileDown className="w-4 h-4" /> CSV</>
+              )}
+            </button>
+            <button 
+              onClick={() => handleExportLeaderboard('pdf')}
+              disabled={downloading !== null}
+              className="flex-1 py-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold font-metadata transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {downloading === 'leaderboard-pdf' ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> PDF...</>
+              ) : (
+                <><FileDown className="w-4 h-4" /> PDF</>
+              )}
+            </button>
+          </div>
         </GlassPanel>
       </div>
     </div>
