@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { generateSupabaseJWT } from "@/lib/jwt";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
