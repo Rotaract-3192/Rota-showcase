@@ -393,6 +393,7 @@ export default function AdminUsersPage() {
                   <option value="Board Member" className="bg-navy-deep text-white">Club Board Member</option>
                   <option value="District Admin" className="bg-navy-deep text-white">District Admin</option>
                   <option value="District Core Team" className="bg-navy-deep text-white">District Core Team</option>
+                  <option value="District Rotaract Secretary" className="bg-navy-deep text-white">District Rotaract Secretary</option>
                   <option value="Super Admin" className="bg-navy-deep text-white">Super Admin</option>
                 </select>
               </div>

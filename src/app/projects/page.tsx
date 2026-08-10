@@ -57,9 +57,9 @@ export default function ProjectsPage() {
       const rows = projects.map(p => [
         p.title,
         p.clubName,
-        p.avenue,
-        p.focusArea || "N/A",
-        p.date
+        p.avenueOfService,
+        p.areaOfFocus || "N/A",
+        p.uploadDate
       ]);
 
       autoTable(doc, {

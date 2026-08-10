@@ -15,6 +15,7 @@ export default function ReportInstallationPage() {
 
   // Form State
   const [eventName, setEventName] = useState("");
+  const [chiefGuest, setChiefGuest] = useState("");
   const [venue, setVenue] = useState("");
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -94,10 +95,11 @@ export default function ReportInstallationPage() {
 
 await createInstallation({
   club_id: club.id,
+  name: eventName || "Club Installation Board",
   date,
   venue: venue || "Virtual / TBD",
   incoming_president_id: profile.id,
-  chief_guest: eventName || "Club Installation Board",
+  chief_guest: chiefGuest || null,
   cover_image: uploadedUrls.coverImage,
   supporting_image_1: uploadedUrls.supportingImage1,
   supporting_image_2: uploadedUrls.supportingImage2,
@@ -134,6 +136,15 @@ await createInstallation({
               onChange={(e) => setEventName(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none" 
               placeholder="e.g. 15th Club Installation" 
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Chief Guest</label>
+            <input 
+              value={chiefGuest}
+              onChange={(e) => setChiefGuest(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none" 
+              placeholder="e.g. Rtn. John Doe" 
             />
           </div>
           <div className="flex flex-col gap-1.5">

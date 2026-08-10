@@ -59,8 +59,8 @@ export default function AdminReportsPage() {
       ]);
 
       if (format === 'csv') {
-        const csvRows = rows.map(r => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
-        const csvContent = [headers.join(","), ...csvRows.map((r: any) => r.join(","))].join("\n");
+        const csvRows = rows.map((r: any[]) => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
+        const csvContent = [headers.join(","), ...csvRows.map((r: any[]) => r.join(","))].join("\n");
         downloadCSV(csvContent, "District_3192_Clubs_Directory.csv");
       } else {
         await downloadPDF(headers, rows, "District 3192 Clubs Directory", "District_3192_Clubs_Directory.pdf");
@@ -93,8 +93,8 @@ export default function AdminReportsPage() {
       ]);
 
       if (format === 'csv') {
-        const csvRows = rows.map(r => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
-        const csvContent = [headers.join(","), ...csvRows.map((r: any) => r.join(","))].join("\n");
+        const csvRows = rows.map((r: any[]) => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
+        const csvContent = [headers.join(","), ...csvRows.map((r: any[]) => r.join(","))].join("\n");
         downloadCSV(csvContent, "District_3192_Projects_Telemetry.csv");
       } else {
         await downloadPDF(headers, rows, "District 3192 Projects Telemetry", "District_3192_Projects_Telemetry.pdf");
@@ -123,8 +123,8 @@ export default function AdminReportsPage() {
       ]);
 
       if (format === 'csv') {
-        const csvRows = rows.map(r => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
-        const csvContent = [headers.join(","), ...csvRows.map((r: any) => r.join(","))].join("\n");
+        const csvRows = rows.map((r: any[]) => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
+        const csvContent = [headers.join(","), ...csvRows.map((r: any[]) => r.join(","))].join("\n");
         downloadCSV(csvContent, "District_3192_Leaderboard_Audit.csv");
       } else {
         await downloadPDF(headers, rows, "District 3192 Leaderboard Audit", "District_3192_Leaderboard_Audit.pdf");
