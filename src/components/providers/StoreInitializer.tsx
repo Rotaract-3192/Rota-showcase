@@ -17,14 +17,16 @@ export function StoreInitializer() {
             id: c.id,
             name: c.name,
             logo: c.logo_url || "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=800&q=80",
-            leaders: [],
+            leaders: c.leaders || [],
             charterYear: c.charter_date ? new Date(c.charter_date).getFullYear().toString() : "2024",
             memberCount: c.member_count || 0,
             totalProjects: c.total_projects || 0,
             totalPoints: c.total_points || 0,
             zone: c.zone || "Arnava",
             description: c.description || "Active Rotaract Club in District 3192.",
-            email: c.email || ""
+            email: c.email || c.club_email || "",
+            clubType: c.club_type || "Community Based",
+            partnerClub: c.partner_rotary_club || ""
           }));
           setClubs(mappedClubs);
 

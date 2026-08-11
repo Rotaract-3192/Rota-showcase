@@ -3,6 +3,7 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 import { Search, Bell, Command, ChevronRight, Menu } from "lucide-react";
+import NotificationDropdown from "./NotificationDropdown";
 
 interface AdminTopNavProps {
   onMenuClick: () => void;
@@ -63,11 +64,8 @@ export default function AdminTopNav({ onMenuClick }: AdminTopNavProps) {
           </div>
         </button>
 
-        {/* Notifications */}
-        <button className="relative p-2 rounded-full border border-slate-700/60 bg-navy-dark/40 hover:bg-navy-light/20 transition-colors text-slate-400 hover:text-white">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-electric-blue shadow-[0_0_6px_rgba(0,240,255,0.6)] animate-pulse" />
-        </button>
+        {/* Notifications Dropdown */}
+        <NotificationDropdown />
 
       </div>
     </header>

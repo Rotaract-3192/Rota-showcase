@@ -6,9 +6,10 @@ import ProjectCard from "@/components/ProjectCard";
 import GlassPanel from "@/components/GlassPanel";
 import { useStore, selectFilteredProjects } from "@/store/useStore";
 import { useShallow } from "zustand/react/shallow";
-import { Search, SlidersHorizontal, RefreshCcw, FolderOpen } from "lucide-react";
+import { Search, SlidersHorizontal, RefreshCcw, FolderOpen, FileDown, Loader2 } from "lucide-react";
 
 export default function ProjectsPage() {
+  const [downloading, setDownloading] = React.useState(false);
   const projects = useStore(useShallow(selectFilteredProjects));
   const { clubs, filters, setFilter, resetFilters } = useStore(useShallow((state) => ({
     clubs: state.clubs,
@@ -43,6 +44,40 @@ export default function ProjectsPage() {
     setFilter("search", e.target.value);
   };
 
+  const exportPDF = async () => {
+    setDownloading(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+      const doc = new jsPDF("landscape");
+      
+      doc.text("District 3192 Impact Showcase", 14, 15);
+      
+      const headers = ["Title", "Club", "Avenue", "Focus Area", "Date"];
+      const rows = projects.map(p => [
+        p.title,
+        p.clubName,
+        p.avenueOfService,
+        p.areaOfFocus || "N/A",
+        p.uploadDate
+      ]);
+
+      autoTable(doc, {
+        head: [headers],
+        body: rows,
+        startY: 20,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [0, 240, 255], textColor: [11, 17, 32] },
+      });
+      doc.save("District_3192_Showcase_Projects.pdf");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export PDF.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen pb-24 px-6 md:px-8">
       {/* Floating Canvas waves */}
@@ -65,7 +100,7 @@ export default function ProjectsPage() {
 
         {/* ================= SEARCH & FILTERS DASHBOARD ================= */}
         <GlassPanel className="p-6 mb-8 border-slate-800/60 bg-navy-dark/40 flex flex-col gap-6">
-          {/* Top row: Search input + Reset Button */}
+          {/* Top row: Search input + Reset Button + Export Button */}
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -78,13 +113,24 @@ export default function ProjectsPage() {
               />
             </div>
             
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-800/60 hover:border-slate-600 bg-navy-dark/40 hover:bg-navy-light text-xs font-metadata font-bold text-slate-400 hover:text-white transition-all focus:outline-none active:scale-95 flex-shrink-0"
-            >
-              <RefreshCcw className="w-3.5 h-3.5" />
-              Reset Filters
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={resetFilters}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-800/60 hover:border-slate-600 bg-navy-dark/40 hover:bg-navy-light text-xs font-metadata font-bold text-slate-400 hover:text-white transition-all focus:outline-none active:scale-95 flex-shrink-0"
+              >
+                <RefreshCcw className="w-3.5 h-3.5" />
+                Reset Filters
+              </button>
+              
+              <button
+                onClick={exportPDF}
+                disabled={downloading}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-emerald-500/30 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-metadata font-bold text-emerald-400 hover:text-emerald-300 transition-all focus:outline-none active:scale-95 flex-shrink-0 disabled:opacity-50"
+              >
+                {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+                Export PDF
+              </button>
+            </div>
           </div>
 
           {/* Bottom row: advanced select lists */}

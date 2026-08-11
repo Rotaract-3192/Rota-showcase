@@ -43,6 +43,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to submit request', details: text }, { status: 500 });
     }
 
+    // Try to notify admins without blocking the main request
+    try {
+      const { notifyRoleAction } = await import('@/actions/notification.actions');
+      await Promise.all([
+        notifyRoleAction('SUPER_ADMIN', 'New Access Request', `${full_name} has requested ${requested_role} access.`, '/admin/access-requests'),
+        notifyRoleAction('DISTRICT_ADMIN', 'New Access Request', `${full_name} has requested ${requested_role} access.`, '/admin/access-requests')
+      ]);
+    } catch (notifErr) {
+      console.error('Failed to send admin notification for access request', notifErr);
+    }
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('API /api/access-requests error:', err);

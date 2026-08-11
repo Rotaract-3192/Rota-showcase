@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import AdminDataTable from "@/components/admin/AdminDataTable";
-import { UserCircle, Shield, Mail, Loader2, Settings2, MoreHorizontal } from "lucide-react";
+import { UserCircle, Shield, Mail, Loader2, Settings2, MoreHorizontal, Eye, Edit2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiUrl } from "@/lib/api";
 
@@ -10,6 +10,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   clubId: string;
   clubName: string;
   role: string;
@@ -34,6 +35,20 @@ export default function AdminUsersPage() {
   });
   const [inviting, setInviting] = useState(false);
 
+  // CRUD state
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({
+    first_name: "",
+    last_name: "",
+    phone: "",
+    club_id: "",
+    role: "Member"
+  });
+  const [saving, setSaving] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const fetchUsers = async () => {
     try {
       const res = await fetch(apiUrl('/api/admin/users'));
@@ -45,6 +60,7 @@ export default function AdminUsersPage() {
           id: u.id,
           name: `${u.first_name || ""} ${u.last_name || ""}`.trim() || "Unknown User",
           email: u.email || "",
+          phone: u.phone || "",
           clubId: u.club_id || "",
           clubName: u.clubs?.name || "No Club Affiliation",
           role: u.member_roles?.[0]?.role || "Member",
@@ -109,6 +125,58 @@ export default function AdminUsersPage() {
       alert(err.message || "Failed to invite user");
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setSaving(true);
+    try {
+      const res = await fetch(apiUrl('/api/admin/users'), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingUser.id,
+          ...editForm
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to update user");
+      }
+      setEditingUser(null);
+      await fetchUsers();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to update user");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = (user: User) => {
+    setUserToDelete(user);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(apiUrl(`/api/admin/users?id=${userToDelete.id}`), {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to delete user");
+      }
+      setUserToDelete(null);
+      await fetchUsers();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to delete user");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -203,14 +271,38 @@ export default function AdminUsersPage() {
             )
           },
           {
-            header: "",
-            cell: () => (
+            header: "Actions",
+            cell: (user) => (
               <div className="flex items-center justify-end gap-2">
-                <button className="p-1.5 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
-                  <Settings2 className="w-4 h-4" />
+                <button 
+                  onClick={() => setSelectedUser(user)}
+                  className="p-1.5 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-blue-400 transition-colors"
+                  title="View Details"
+                >
+                  <Eye className="w-4 h-4" />
                 </button>
-                <button className="p-1.5 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
-                  <MoreHorizontal className="w-4 h-4" />
+                <button 
+                  onClick={() => {
+                    setEditForm({
+                      first_name: user.name.split(' ')[0] || '',
+                      last_name: user.name.split(' ').slice(1).join(' ') || '',
+                      phone: user.phone || '',
+                      club_id: user.clubId || '',
+                      role: user.role || 'Member'
+                    });
+                    setEditingUser(user);
+                  }}
+                  className="p-1.5 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 transition-colors"
+                  title="Edit User"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => handleDelete(user)}
+                  className="p-1.5 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition-colors"
+                  title="Delete User"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             )
@@ -301,6 +393,7 @@ export default function AdminUsersPage() {
                   <option value="Board Member" className="bg-navy-deep text-white">Club Board Member</option>
                   <option value="District Admin" className="bg-navy-deep text-white">District Admin</option>
                   <option value="District Core Team" className="bg-navy-deep text-white">District Core Team</option>
+                  <option value="District Rotaract Secretary" className="bg-navy-deep text-white">District Rotaract Secretary</option>
                   <option value="Super Admin" className="bg-navy-deep text-white">Super Admin</option>
                 </select>
               </div>
@@ -319,6 +412,199 @@ export default function AdminUsersPage() {
                   "Send Invitation Email"
                 )}
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-deep/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="bg-navy-dark/90 border border-rose-500/30 p-6 rounded-2xl max-w-sm w-full shadow-2xl flex flex-col gap-4 animate-scale-in text-center">
+            <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto mb-2">
+              <Trash2 className="w-6 h-6 text-rose-500" />
+            </div>
+            <h3 className="font-headline text-xl font-bold text-white">Delete User?</h3>
+            <p className="text-sm text-slate-300 font-body">
+              Are you sure you want to delete <span className="font-bold text-white">{userToDelete.name}</span>? This action cannot be undone and will remove all their access.
+            </p>
+            <div className="flex items-center gap-3 mt-4">
+              <button 
+                onClick={() => setUserToDelete(null)}
+                className="flex-1 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold transition-all flex items-center justify-center gap-2"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View User Modal */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-deep/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="bg-navy-dark/90 border border-slate-800/80 p-6 rounded-2xl max-w-md w-full shadow-2xl flex flex-col gap-5 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-800/60 pb-3">
+              <h3 className="font-headline text-lg font-bold text-white flex items-center gap-2">
+                <UserCircle className="w-5 h-5 text-electric-blue" />
+                User Details
+              </h3>
+              <button 
+                onClick={() => setSelectedUser(null)}
+                className="text-slate-400 hover:text-white transition-colors text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-4 text-sm font-body">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Name</span>
+                  <span className="text-white font-bold">{selectedUser.name}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Email</span>
+                  <span className="text-white">{selectedUser.email}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Phone</span>
+                  <span className="text-white">{selectedUser.phone || 'N/A'}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Status</span>
+                  <span className="text-white">{selectedUser.status}</span>
+                </div>
+                <div className="flex flex-col gap-1 col-span-2">
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Role</span>
+                  <span className="text-white">{selectedUser.role}</span>
+                </div>
+                <div className="flex flex-col gap-1 col-span-2">
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Club Affiliation</span>
+                  <span className="text-white">{selectedUser.clubName}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-2 pt-4 border-t border-slate-800/60">
+              <button 
+                onClick={() => setSelectedUser(null)}
+                className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-deep/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="bg-navy-dark/90 border border-slate-800/80 p-6 rounded-2xl max-w-md w-full shadow-2xl flex flex-col gap-4 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-800/60 pb-3">
+              <h3 className="font-headline text-lg font-bold text-white flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-emerald-400" />
+                Edit User
+              </h3>
+              <button 
+                onClick={() => setEditingUser(null)}
+                className="text-slate-400 hover:text-white transition-colors text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="flex flex-col gap-4 text-sm font-body">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">First Name</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editForm.first_name}
+                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Last Name</label>
+                  <input 
+                    type="text" 
+                    value={editForm.last_name}
+                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Phone Number</label>
+                <input 
+                  type="tel" 
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Club Affiliation</label>
+                <select
+                  value={editForm.club_id}
+                  onChange={(e) => setEditForm({ ...editForm, club_id: e.target.value })}
+                  className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 font-body appearance-none cursor-pointer"
+                >
+                  <option value="" className="bg-navy-deep text-slate-400">Select a club...</option>
+                  {clubs.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-navy-deep text-white">
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Role / Position</label>
+                <select
+                  required
+                  value={editForm.role}
+                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                  className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 font-body appearance-none cursor-pointer font-bold"
+                >
+                  <option value="General Member" className="bg-navy-deep text-white">General Member</option>
+                  <option value="President" className="bg-navy-deep text-white">Club President</option>
+                  <option value="Secretary" className="bg-navy-deep text-white">Club Secretary</option>
+                  <option value="Board Member" className="bg-navy-deep text-white">Club Board Member</option>
+                  <option value="District Admin" className="bg-navy-deep text-white">District Admin</option>
+                  <option value="District Core Team" className="bg-navy-deep text-white">District Core Team</option>
+                  <option value="Super Admin" className="bg-navy-deep text-white">Super Admin</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3 mt-2">
+                <button 
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="flex-1 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+                </button>
+              </div>
             </form>
           </div>
         </div>

@@ -47,6 +47,8 @@ export interface Club {
   zone: string;
   description: string;
   email: string;
+  clubType?: string;
+  partnerClub?: string;
 }
 
 export interface User {

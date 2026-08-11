@@ -6,9 +6,11 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowLeft, Save, Send, CheckCircle2, UploadCloud, Loader2, Users } from "lucide-react";
-import { useCreateActivity } from "@/mutations/activity.mutations";
+import { useCreateActivity, useUpdateActivity } from "@/mutations/activity.mutations";
 import { useProfile } from "@/hooks/useProfile";
 import PhotoUploadGroup from "@/components/PhotoUploadGroup";
+import { useSearchParams } from "next/navigation";
+import { useActivity } from "@/queries/activity.queries";
 
 // Form Schema Definition
 const reportSchema = z.object({
@@ -18,7 +20,7 @@ const reportSchema = z.object({
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
   sameAsStart: z.boolean().optional(),
-  activityType: z.enum(["Standalone", "Collaborative"]),
+  activityType: z.enum(["Standalone", "Joint"]),
   externalNGO: z.boolean().optional(),
   organizationName: z.string().optional(),
   avenues: z.array(z.string()).min(1, "Select at least one avenue."),
@@ -56,6 +58,11 @@ const steps = [
 ];
 
 export default function ReportActivityPage() {
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+  
+  const { data: activityToEdit, isLoading: isLoadingActivity } = useActivity(editId || "");
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -69,7 +76,9 @@ export default function ReportActivityPage() {
     supportingImage2: null,
   });
   const { club, isLoading } = useProfile();
-  const { mutateAsync: createActivity, isPending } = useCreateActivity();
+  const { mutateAsync: createActivity, isPending: isCreating } = useCreateActivity();
+  const { mutateAsync: updateActivity, isPending: isUpdating } = useUpdateActivity();
+  const isPending = isCreating || isUpdating;
 
   const {
     register,
@@ -77,6 +86,7 @@ export default function ReportActivityPage() {
     control,
     watch,
     trigger,
+    reset,
     formState: { errors },
   } = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema) as any,
@@ -94,10 +104,43 @@ export default function ReportActivityPage() {
     },
   });
 
+  React.useEffect(() => {
+    if (activityToEdit && editId) {
+      reset({
+        title: activityToEdit.title || "",
+        venue: activityToEdit.venue || "",
+        description: activityToEdit.description || "",
+        startDate: activityToEdit.start_time ? new Date(activityToEdit.start_time).toISOString().split('T')[0] : "",
+        endDate: activityToEdit.end_time ? new Date(activityToEdit.end_time).toISOString().split('T')[0] : "",
+        sameAsStart: activityToEdit.start_time === activityToEdit.end_time,
+        activityType: activityToEdit.activity_category as any || "Standalone",
+        externalNGO: activityToEdit.is_external_ngo || false,
+        organizationName: activityToEdit.organization_name || "",
+        avenues: activityToEdit.avenues || [],
+        focusAreas: activityToEdit.focus_areas || [],
+        activityExpenses: activityToEdit.activity_expenses || 0,
+        cashContribution: activityToEdit.cash_contribution || 0,
+        inKindContribution: activityToEdit.in_kind_contribution || 0,
+        participants: activityToEdit.participants || 0,
+        beneficiaries: activityToEdit.beneficiaries || 0,
+        volunteers: activityToEdit.volunteers || 0,
+        hoursPerVolunteer: activityToEdit.volunteers ? Math.round((activityToEdit.volunteer_hours || 0) / activityToEdit.volunteers) : 0,
+        submitForPublication: activityToEdit.submit_for_publication || false,
+        featureActivity: activityToEdit.feature_activity || false,
+      });
+
+      setUploadedUrls({
+        coverImage: activityToEdit.cover_image || null,
+        supportingImage1: activityToEdit.supporting_image_1 || null,
+        supportingImage2: activityToEdit.supporting_image_2 || null,
+      });
+    }
+  }, [activityToEdit, editId, reset]);
+
   const sameAsStart = watch("sameAsStart");
   const externalNGO = watch("externalNGO");
 
-  if (isLoading) {
+  if (isLoading || (editId && isLoadingActivity)) {
     return (
       <div className="max-w-3xl mx-auto flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-electric-blue animate-spin" />
@@ -197,7 +240,11 @@ export default function ReportActivityPage() {
         supporting_image_2: uploadedUrls.supportingImage2,
       };
 
-      await createActivity(payload);
+      if (editId) {
+        await updateActivity({ id: editId, payload });
+      } else {
+        await createActivity(payload);
+      }
       setIsSubmitted(true);
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to submit activity");
@@ -213,7 +260,7 @@ export default function ReportActivityPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto text-center">
         <CheckCircle2 className="w-20 h-20 text-emerald-400 mb-6 animate-bounce" />
-        <h2 className="font-headline text-3xl font-bold text-white mb-2">Activity Reported Successfully!</h2>
+        <h2 className="font-headline text-3xl font-bold text-white mb-2">Activity {editId ? "Updated" : "Reported"} Successfully!</h2>
         <p className="text-slate-400 font-body mb-8">
           Your project report has been securely transmitted to the district command center. 
           It is now pending review for showcase publication.
@@ -235,9 +282,9 @@ export default function ReportActivityPage() {
         <Link href="/portal/activities" className="inline-flex items-center gap-2 text-xs font-metadata font-bold text-slate-500 hover:text-white uppercase mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Activities
         </Link>
-        <h1 className="font-headline text-3xl font-bold text-white tracking-tight">Report Activity</h1>
+        <h1 className="font-headline text-3xl font-bold text-white tracking-tight">{editId ? "Edit Activity" : "Report Activity"}</h1>
         <p className="text-slate-400 text-sm font-body mt-1">
-          Submit details about your club's project to record impact and qualify for district rankings.
+          {editId ? "Update details about your club's project to maintain accurate impact records." : "Submit details about your club's project to record impact and qualify for district rankings."}
         </p>
       </div>
 
@@ -354,8 +401,8 @@ export default function ReportActivityPage() {
                   Standalone Activity
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-200">
-                  <input type="radio" value="Collaborative" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
-                  Collaborative Activity
+                  <input type="radio" value="Joint" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
+                  Joint Activity
                 </label>
               </div>
             </div>

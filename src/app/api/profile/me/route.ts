@@ -30,6 +30,12 @@ export async function GET(req: NextRequest) {
           .from('member_profiles')
           .update({ auth_id: userId })
           .eq('id', existingProfile.id);
+        
+        // Also update any pending notifications
+        await supabase
+          .from('notifications')
+          .update({ user_id: userId })
+          .eq('user_id', `pending_${email}`);
       } else {
         console.log("No profile found, creating new profile...");
         const nameParts = (user?.fullName || email.split('@')[0]).split(' ');

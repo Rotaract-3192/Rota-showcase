@@ -23,8 +23,13 @@ export default function AdminClubsPage() {
   const clubs = useStore((state) => state.clubs);
   const projects = useStore((state) => state.projects);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedZone, setSelectedZone] = useState("All");
+  const [selectedClubType, setSelectedClubType] = useState("All");
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
   const setSelectedProjectId = useStore((state) => state.setSelectedProjectId);
+
+  const zones = ["Arnava", "Pravaha", "Taranga", "Varuna", "Sagara", "Samudhra"];
+  const clubTypes = ["Community Based", "Institution Based"];
 
   const sortedClubs = [...clubs].sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) {
@@ -33,10 +38,12 @@ export default function AdminClubsPage() {
     return b.totalProjects - a.totalProjects;
   });
 
-  const filteredClubs = sortedClubs.filter(club => 
-    club.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    club.zone.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredClubs = sortedClubs.filter(club => {
+    const matchesSearch = club.name.toLowerCase().includes(searchTerm.toLowerCase()) || club.zone.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesZone = selectedZone === "All" || club.zone === selectedZone;
+    const matchesType = selectedClubType === "All" || (club.clubType && club.clubType === selectedClubType);
+    return matchesSearch && matchesZone && matchesType;
+  });
 
   // If a club is selected, render the Club Details View
   if (selectedClubId) {
@@ -46,12 +53,7 @@ export default function AdminClubsPage() {
       const clubProjects = projects.filter((p) => p.clubId === club.id);
       const rank = sortedClubs.findIndex(c => c.id === club.id) + 1;
       
-      const mockMembers = [
-        { name: "Rtr. Rajesh Kumar", role: "President", email: `${club.id}_pres@rotaract.org` },
-        { name: "Rtr. Sneha Patel", role: "Secretary", email: `${club.id}_sec@rotaract.org` },
-        { name: "Rtr. Amit Sharma", role: "Treasurer", email: `${club.id}_tres@rotaract.org` },
-        { name: "Rtr. Priya Rao", role: "Public Image Chair", email: `${club.id}_pi@rotaract.org` }
-      ];
+
 
       return (
         <div className="flex flex-col gap-6 max-w-[1200px] mx-auto pb-12 animate-fade-in">
@@ -142,17 +144,21 @@ export default function AdminClubsPage() {
               <GlassPanel className="p-6 border-slate-800/60 bg-navy-dark/40 flex flex-col gap-4">
                 <h3 className="font-headline text-base font-bold text-white border-b border-slate-800/60 pb-2">Club Officers</h3>
                 <div className="flex flex-col gap-3">
-                  {mockMembers.map((officer) => (
-                    <div key={officer.role} className="flex items-center justify-between p-2.5 rounded-lg bg-navy-deep/40 border border-slate-800/60">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-white">{officer.name}</span>
-                        <span className="text-[10px] text-slate-500 font-metadata">{officer.email}</span>
+                  {club.leaders && club.leaders.length > 0 ? (
+                    club.leaders.map((officer: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-navy-deep/40 border border-slate-800/60">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white">{officer.name}</span>
+                          <span className="text-[10px] text-slate-500 font-metadata">{officer.email || officer.phone || "No contact info"}</span>
+                        </div>
+                        <span className="text-[9px] font-metadata font-bold px-2 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-300 uppercase">
+                          {officer.designation}
+                        </span>
                       </div>
-                      <span className="text-[9px] font-metadata font-bold px-2 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-300 uppercase">
-                        {officer.role}
-                      </span>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-xs text-slate-500 font-body py-4 text-center">No club officers listed.</div>
+                  )}
                 </div>
               </GlassPanel>
             </div>
@@ -241,6 +247,26 @@ export default function AdminClubsPage() {
         data={filteredClubs}
         searchPlaceholder="Search by name or zone..."
         onSearch={setSearchTerm}
+        actions={
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedZone}
+              onChange={(e) => setSelectedZone(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-navy-deep/80 border border-slate-700/60 text-xs text-slate-300 focus:outline-none focus:border-electric-blue/50"
+            >
+              <option value="All">All Zones</option>
+              {zones.map(z => <option key={z} value={z}>{z}</option>)}
+            </select>
+            <select
+              value={selectedClubType}
+              onChange={(e) => setSelectedClubType(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-navy-deep/80 border border-slate-700/60 text-xs text-slate-300 focus:outline-none focus:border-electric-blue/50"
+            >
+              <option value="All">All Types</option>
+              {clubTypes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        }
         columns={[
           {
             header: "Club Identity",

@@ -43,8 +43,15 @@ export default function ClubCard({ club, rank }: ClubCardProps) {
               <MapPin className="w-3 h-3 text-slate-500" />
               <span>{club.zone}</span>
               <span className="text-slate-600">•</span>
+              <span>{club.clubType || "Community Based"}</span>
+              <span className="text-slate-600">•</span>
               <span>Est. {club.charterYear}</span>
             </div>
+            {club.partnerClub && (
+              <div className="mt-1 text-[10px] font-metadata text-slate-500 truncate">
+                Sponsored by: <span className="text-slate-400">{club.partnerClub}</span>
+              </div>
+            )}
           </div>
         </div>
 

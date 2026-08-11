@@ -375,6 +375,11 @@ export interface Database {
           club_type: string | null
           club_email: string | null
           partner_rotary_club: string | null
+          member_count: number | null
+          total_projects: number | null
+          total_points: number | null
+          description: string | null
+          email: string | null
         }
         Insert: {
           id?: string
@@ -392,6 +397,11 @@ export interface Database {
           club_type?: string | null
           club_email?: string | null
           partner_rotary_club?: string | null
+          member_count?: number | null
+          total_projects?: number | null
+          total_points?: number | null
+          description?: string | null
+          email?: string | null
         }
         Update: {
           id?: string
@@ -409,6 +419,11 @@ export interface Database {
           club_type?: string | null
           club_email?: string | null
           partner_rotary_club?: string | null
+          member_count?: number | null
+          total_projects?: number | null
+          total_points?: number | null
+          description?: string | null
+          email?: string | null
         }
         Relationships: []
       }
@@ -748,33 +763,33 @@ export interface Database {
       notifications: {
         Row: {
           id: string
-          recipient_id: string
+          user_id: string | null
+          role_target: string | null
           title: string
-          message: string
-          is_read: boolean
-          created_at: string
-          updated_at: string
-          deleted_at: string | null
+          message: string | null
+          link: string | null
+          is_read: boolean | null
+          created_at: string | null
         }
         Insert: {
           id?: string
-          recipient_id: string
+          user_id?: string | null
+          role_target?: string | null
           title: string
-          message: string
-          is_read?: boolean
-          created_at?: string
-          updated_at?: string
-          deleted_at?: string | null
+          message?: string | null
+          link?: string | null
+          is_read?: boolean | null
+          created_at?: string | null
         }
         Update: {
           id?: string
-          recipient_id?: string
+          user_id?: string | null
+          role_target?: string | null
           title?: string
-          message?: string
-          is_read?: boolean
-          created_at?: string
-          updated_at?: string
-          deleted_at?: string | null
+          message?: string | null
+          link?: string | null
+          is_read?: boolean | null
+          created_at?: string | null
         }
         Relationships: []
       }

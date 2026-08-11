@@ -17,7 +17,7 @@ const reportSchema = z.object({
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
   sameAsStart: z.boolean().optional(),
-  activityType: z.enum(["Standalone", "Collaborative"]),
+  activityType: z.enum(["Standalone", "Joint"]),
   externalNGO: z.boolean().optional(),
   organizationName: z.string().optional(),
   avenues: z.array(z.string()).min(1, "Select at least one avenue."),
@@ -331,8 +331,8 @@ export default function ReportActivityPage() {
                   Standalone Activity
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-200">
-                  <input type="radio" value="Collaborative" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
-                  Collaborative Activity
+                  <input type="radio" value="Joint" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
+                  Joint Activity
                 </label>
               </div>
             </div>
