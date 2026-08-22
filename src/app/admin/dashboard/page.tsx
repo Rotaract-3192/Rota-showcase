@@ -53,16 +53,9 @@ export default function AdminDashboardPage() {
   const activeZone = (!isSuperAdmin && userZone) ? userZone : selectedZone;
 
   // Filter lists based on selected zone
+  // We now rely solely on the backend stats API for telemetry instead of mock data from the store
   const filteredClubs = activeZone === "All" ? clubs : clubs.filter(c => c.zone === activeZone);
   const filteredProjects = activeZone === "All" ? projects : projects.filter(p => p.zone === activeZone);
-
-  // Dynamic Telemetry calculation (fallbacks while loading)
-  const totalClubs = filteredClubs.length;
-  const totalProjects = filteredProjects.length;
-  const totalVolunteers = filteredProjects.reduce((acc, p) => acc + (p.volunteerCount || 0), 0);
-  const volunteerHours = filteredProjects.reduce((acc, p) => acc + (p.volunteerHours || 0), 0);
-  const totalBeneficiaries = filteredProjects.reduce((acc, p) => acc + (p.beneficiaries || 0), 0);
-  const contributions = filteredProjects.reduce((acc, p) => acc + (p.contributions || 0), 0);
 
   // Removed static performanceData and scaledPerformanceData since we use the real API data now.
 
@@ -198,27 +191,27 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <AdminKPICard 
           title="Total Clubs" 
-          value={stats?.metrics?.totalClubs || totalClubs} 
+          value={loadingStats ? "..." : (stats?.metrics?.totalClubs || 0)} 
           icon={<Building2 className="w-5 h-5 text-electric-blue" />}
           trend={stats?.trends ? { value: parseTrend(stats.trends.clubs), label: "from last month" } : undefined}
         />
         <AdminKPICard 
           title="Total Projects" 
-          value={(stats?.metrics?.totalProjects || totalProjects).toLocaleString()} 
+          value={loadingStats ? "..." : (stats?.metrics?.totalProjects || 0).toLocaleString()} 
           icon={<Layers className="w-5 h-5 text-ocean-glow" />}
           trend={stats?.trends ? { value: parseTrend(stats.trends.projects), label: "from last month" } : undefined}
           glowColor="blue"
         />
         <AdminKPICard 
           title="Total Volunteers" 
-          value={(stats?.metrics?.totalVolunteers || totalVolunteers).toLocaleString()} 
+          value={loadingStats ? "..." : (stats?.metrics?.totalVolunteers || 0).toLocaleString()} 
           icon={<Users className="w-5 h-5 text-emerald-400" />}
           trend={stats?.trends ? { value: parseTrend(stats.trends.volunteers), label: "from last month" } : undefined}
           glowColor="white"
         />
         <AdminKPICard 
           title="Volunteer Hours" 
-          value={(stats?.metrics?.totalVolunteerHours || volunteerHours).toLocaleString()} 
+          value={loadingStats ? "..." : (stats?.metrics?.totalVolunteerHours || 0).toLocaleString()} 
           icon={<Clock className="w-5 h-5 text-amber-400" />}
           trend={stats?.trends ? { value: parseTrend(stats.trends.volunteerHours), label: "from last month" } : undefined}
           glowColor="white"
@@ -229,12 +222,12 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <AdminKPICard 
           title="Beneficiaries" 
-          value={(stats?.metrics?.totalBeneficiaries || totalBeneficiaries).toLocaleString()} 
+          value={loadingStats ? "..." : (stats?.metrics?.totalBeneficiaries || 0).toLocaleString()} 
           icon={<Heart className="w-5 h-5 text-rose-400" />}
         />
         <AdminKPICard 
           title="Funds Raised" 
-          value={`₹${(stats?.metrics?.totalFundsRaised || contributions).toLocaleString()}`} 
+          value={loadingStats ? "..." : `₹${(stats?.metrics?.totalFundsRaised || 0).toLocaleString()}`} 
           icon={<Award className="w-5 h-5 text-emerald-500" />}
         />
         <AdminKPICard 
