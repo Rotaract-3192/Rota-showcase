@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Tent, Calendar, MapPin, User, Award } from "lucide-react";
 import GlassPanel from "@/components/GlassPanel";
 import { useInstallationList } from "@/queries/installation.queries";
+import { useDeleteInstallation } from "@/mutations/installation.mutations";
 
 export default function InstallationsPage() {
   const { data: listResult, isLoading } = useInstallationList({
@@ -13,6 +14,17 @@ export default function InstallationsPage() {
   });
 
   const installations = listResult?.data || [];
+  const { mutateAsync: deleteInstallation, isPending: isDeleting } = useDeleteInstallation();
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this installation report?")) {
+      try {
+        await deleteInstallation(id);
+      } catch (e) {
+        alert("Failed to delete installation report");
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
@@ -45,6 +57,7 @@ export default function InstallationsPage() {
                   <th className="py-4 px-6">Date</th>
                   <th className="py-4 px-6">Venue</th>
                   <th className="py-4 px-6">Chief Guest</th>
+                  <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/40 text-slate-300">
@@ -61,6 +74,21 @@ export default function InstallationsPage() {
                     <td className="py-4 px-6 font-medium">
                       <User className="w-3.5 h-3.5 text-slate-500 inline mr-1.5" />
                       {item.chief_guest || "N/A"}
+                    </td>
+                    <td className="py-4 px-6 text-right space-x-3">
+                      <Link href={`/portal/installations/${item.id}`} className="text-electric-blue hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">
+                        View
+                      </Link>
+                      <Link href={`/portal/installations/report?edit=${item.id}`} className="text-amber-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">
+                        Edit
+                      </Link>
+                      <button 
+                        onClick={() => handleDelete(item.id)} 
+                        disabled={isDeleting}
+                        className="text-red-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
