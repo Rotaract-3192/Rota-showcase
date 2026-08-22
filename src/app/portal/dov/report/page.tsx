@@ -2,16 +2,23 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Save, Send, Loader2, Users } from "lucide-react";
-import { useCreateDov } from "@/mutations/dov.mutations";
+import { useCreateDov, useUpdateDov } from "@/mutations/dov.mutations";
+import { useDov } from "@/queries/dov.queries";
 import { useProfile } from "@/hooks/useProfile";
 import PhotoUploadGroup from "@/components/PhotoUploadGroup";
 
 export default function ReportDovPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+  const { data: editData, isLoading: isEditLoading } = useDov(editId || "");
+
   const { club, profile, isLoading } = useProfile();
-  const { mutateAsync: createDov, isPending } = useCreateDov();
+  const { mutateAsync: createDov, isPending: isCreating } = useCreateDov();
+  const { mutateAsync: updateDov, isPending: isUpdating } = useUpdateDov();
+  const isPending = isCreating || isUpdating;
 
   // Form State
   const [eventName, setEventName] = useState("");
@@ -32,7 +39,29 @@ export default function ReportDovPage() {
     supportingImage2: null,
   });
 
-  if (isLoading) {
+  React.useEffect(() => {
+    if (editData) {
+      setDate(editData.date || "");
+      
+      const rm = editData.remarks || "";
+      const eventMatch = rm.match(/Event: (.*?)(?= \|)/);
+      if (eventMatch) setEventName(eventMatch[1]);
+      const venueMatch = rm.match(/Venue: (.*?)(?= \|)/);
+      if (venueMatch) setVenue(venueMatch[1]);
+      const reportMatch = rm.match(/Report Link: (.*?)(?= \|)/);
+      if (reportMatch) setReportLink(reportMatch[1] === "None" ? "" : reportMatch[1]);
+      
+      setDocsSent(rm.includes("Docs Sent: Yes"));
+
+      setUploadedUrls({
+        coverImage: editData.cover_image || null,
+        supportingImage1: editData.supporting_image_1 || null,
+        supportingImage2: editData.supporting_image_2 || null,
+      });
+    }
+  }, [editData]);
+
+  if (isLoading || isEditLoading) {
     return (
       <div className="max-w-3xl mx-auto flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-electric-blue animate-spin" />
@@ -90,16 +119,22 @@ export default function ReportDovPage() {
   return;
 }
 
-await createDov({
-  club_id: club.id,
-  date,
-  visiting_official_id: profile.id,
-  evaluation_score: 95,
-  remarks: richRemarks,
-  cover_image: uploadedUrls.coverImage,
-  supporting_image_1: uploadedUrls.supportingImage1,
-  supporting_image_2: uploadedUrls.supportingImage2,
-});
+      const payload = {
+        club_id: club.id,
+        date,
+        visiting_official_id: profile.id,
+        evaluation_score: editData?.evaluation_score || 95,
+        remarks: richRemarks,
+        cover_image: uploadedUrls.coverImage,
+        supporting_image_1: uploadedUrls.supportingImage1,
+        supporting_image_2: uploadedUrls.supportingImage2,
+      };
+
+      if (editId) {
+        await updateDov({ id: editId, payload });
+      } else {
+        await createDov(payload);
+      }
 
       router.push("/portal/dov");
     } catch (err: any) {
@@ -113,7 +148,7 @@ await createDov({
         <Link href="/portal/dov" className="inline-flex items-center gap-2 text-xs font-metadata font-bold text-slate-500 hover:text-white uppercase mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back
         </Link>
-        <h1 className="font-headline text-3xl font-bold text-white tracking-tight">Report DOV</h1>
+        <h1 className="font-headline text-3xl font-bold text-white tracking-tight">{editId ? "Edit" : "Report"} DOV</h1>
       </div>
 
       <div className="bg-navy-dark/40 border border-slate-800/60 p-6 md:p-8 rounded-2xl flex flex-col gap-6">
@@ -215,17 +250,14 @@ await createDov({
             <button 
               type="submit" 
               disabled={isPending}
-              className="px-8 py-2.5 rounded-lg bg-electric-blue text-navy-deep hover:bg-ocean-glow transition-all text-sm font-bold flex items-center gap-2 disabled:opacity-55 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-electric-blue text-navy-deep font-bold text-xs uppercase tracking-wider hover:bg-ocean-glow hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
             >
               {isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
-                </>
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  <Send className="w-4 h-4" /> Submit
-                </>
+                <Save className="w-4 h-4" />
               )}
+              {editId ? "Update Report" : "Submit Report"}
             </button>
           </div>
         </form>
