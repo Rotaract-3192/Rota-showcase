@@ -18,6 +18,8 @@ interface AdminDataTableProps<T> {
   searchPlaceholder?: string;
   onSearch?: (value: string) => void;
   actions?: React.ReactNode;
+  onFilterClick?: () => void;
+  filterContent?: React.ReactNode;
 }
 
 export default function AdminDataTable<T>({
@@ -27,7 +29,9 @@ export default function AdminDataTable<T>({
   columns,
   searchPlaceholder = "Search...",
   onSearch,
-  actions
+  actions,
+  onFilterClick,
+  filterContent
 }: AdminDataTableProps<T>) {
   return (
     <GlassPanel className="p-0 border-slate-800/60 bg-navy-dark/40 flex flex-col overflow-hidden">
@@ -50,7 +54,10 @@ export default function AdminDataTable<T>({
               className="pl-9 pr-4 py-2 rounded-lg bg-navy-deep/80 border border-slate-700/60 text-sm text-white focus:outline-none focus:border-electric-blue/50 focus:ring-1 focus:ring-electric-blue/50 transition-all w-full sm:w-64 font-body placeholder:text-slate-500"
             />
           </div>
-          <button className="p-2 rounded-lg bg-navy-deep/80 border border-slate-700/60 hover:bg-slate-800 hover:text-white text-slate-400 transition-colors">
+          <button 
+            onClick={onFilterClick}
+            className="p-2 rounded-lg bg-navy-deep/80 border border-slate-700/60 hover:bg-slate-800 hover:text-white text-slate-400 transition-colors focus:outline-none"
+          >
             <Filter className="w-4 h-4" />
           </button>
           {actions && (
@@ -59,6 +66,12 @@ export default function AdminDataTable<T>({
           {actions}
         </div>
       </div>
+      
+      {filterContent && (
+        <div className="p-4 border-b border-slate-800/60 bg-navy-deep/30">
+          {filterContent}
+        </div>
+      )}
 
       {/* Table Body */}
       <div className="overflow-x-auto w-full custom-scrollbar">

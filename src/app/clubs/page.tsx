@@ -6,7 +6,7 @@ import ClubCard from "@/components/ClubCard";
 import GlassPanel from "@/components/GlassPanel";
 import { useStore, selectFilteredClubs } from "@/store/useStore";
 import { useShallow } from "zustand/react/shallow";
-import { Trophy, Search, RefreshCcw, Landmark, MapPin, Award, Layers } from "lucide-react";
+import { Search, RefreshCcw, Landmark, MapPin, Award, Layers } from "lucide-react";
 
 export default function ClubsPage() {
   const filteredClubs = useStore(useShallow(selectFilteredClubs));
@@ -19,18 +19,7 @@ export default function ClubsPage() {
     resetFilters: state.resetClubFilters,
   })));
 
-  // Leaderboard lists (always computed from full clubs database, sorted by points then projects)
-  const leaderboardSorted = [...clubs].sort((a, b) => {
-    if (b.totalPoints !== a.totalPoints) {
-      return b.totalPoints - a.totalPoints;
-    }
-    return b.totalProjects - a.totalProjects;
-  });
 
-  // Extract Podium (Top 3)
-  const top1 = leaderboardSorted[0];
-  const top2 = leaderboardSorted[1];
-  const top3 = leaderboardSorted[2];
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilter("search", e.target.value);
@@ -63,107 +52,6 @@ export default function ClubsPage() {
           </p>
         </div>
 
-        {/* ================= CLUB LEADERBOARD (PODIUM & LIST) ================= */}
-        <section className="mb-20">
-          <div className="flex items-center gap-3 mb-10 pb-3 border-b border-slate-800/40 max-w-sm">
-            <Trophy className="w-6 h-6 text-electric-blue" />
-            <h2 className="font-headline text-2xl font-bold text-white">
-              District Leaderboard
-            </h2>
-          </div>
-
-          {/* 1. TOP 3 PODIUM LAYOUT */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-end max-w-5xl mx-auto mb-12">
-            
-            {/* RANK #2 (Left Podium) */}
-            {top2 && (
-              <div className="order-2 lg:order-1 flex flex-col items-center">
-                <div className="w-12 h-12 rounded-full bg-slate-400/10 border border-slate-400/40 flex items-center justify-center font-metadata font-bold text-slate-300 text-sm mb-3">
-                  #2
-                </div>
-                <GlassPanel
-                  glowColor="white"
-                  className="w-full text-center p-6 border-slate-400/20 bg-navy-dark/30 hover:border-slate-400/40"
-                >
-                  <img
-                    src={top2.logo}
-                    alt={top2.name}
-                    className="w-16 h-16 rounded-full mx-auto object-cover border border-slate-700/60 p-0.5"
-                  />
-                  <h3 className="font-headline text-md font-bold text-white mt-4 line-clamp-1">
-                    {top2.name}
-                  </h3>
-                  <p className="text-[10px] font-metadata text-slate-400 mt-1 uppercase font-bold tracking-wider">
-                    {getPresidentName(top2.leaders)}
-                  </p>
-                  <div className="mt-4 pt-3 border-t border-slate-800/40 text-center text-xs font-metadata">
-                    <p className="text-[9px] text-slate-500 font-bold uppercase">Projects Completed</p>
-                    <p className="text-white font-bold text-sm">{top2.totalProjects}</p>
-                  </div>
-                </GlassPanel>
-              </div>
-            )}
-
-            {/* RANK #1 (Center Podium - Taller and Glowing) */}
-            {top1 && (
-              <div className="order-1 lg:order-2 flex flex-col items-center">
-                <div className="w-14 h-14 rounded-full bg-electric-blue/15 border border-electric-blue/50 flex items-center justify-center font-metadata font-bold text-electric-blue text-lg mb-3 shadow-[0_0_20px_rgba(0,240,255,0.2)]">
-                  #1
-                </div>
-                <GlassPanel
-                  glowColor="cyan"
-                  className="w-full text-center p-8 border-electric-blue/35 bg-navy-dark/50 hover:border-electric-blue/50 lg:-translate-y-4 shadow-xl"
-                >
-                  <img
-                    src={top1.logo}
-                    alt={top1.name}
-                    className="w-20 h-20 rounded-full mx-auto object-cover border border-electric-blue/40 p-0.5"
-                  />
-                  <h3 className="font-headline text-lg font-bold text-white mt-4 line-clamp-1">
-                    {top1.name}
-                  </h3>
-                  <p className="text-[10px] font-metadata text-electric-blue mt-1 uppercase font-bold tracking-wider">
-                    {getPresidentName(top1.leaders)}
-                  </p>
-                  <div className="mt-5 pt-4 border-t border-slate-800/40 text-center text-xs font-metadata">
-                    <p className="text-[9px] text-slate-500 font-bold uppercase">Projects Completed</p>
-                    <p className="text-electric-blue font-bold text-sm">{top1.totalProjects}</p>
-                  </div>
-                </GlassPanel>
-              </div>
-            )}
-
-            {/* RANK #3 (Right Podium) */}
-            {top3 && (
-              <div className="order-3 flex flex-col items-center">
-                <div className="w-12 h-12 rounded-full bg-amber-700/10 border border-amber-700/40 flex items-center justify-center font-metadata font-bold text-amber-500 text-sm mb-3">
-                  #3
-                </div>
-                <GlassPanel
-                  glowColor="blue"
-                  className="w-full text-center p-6 border-amber-700/25 bg-navy-dark/30 hover:border-amber-700/40"
-                >
-                  <img
-                    src={top3.logo}
-                    alt={top3.name}
-                    className="w-16 h-16 rounded-full mx-auto object-cover border border-slate-700/60 p-0.5"
-                  />
-                  <h3 className="font-headline text-md font-bold text-white mt-4 line-clamp-1">
-                    {top3.name}
-                  </h3>
-                  <p className="text-[10px] font-metadata text-slate-400 mt-1 uppercase font-bold tracking-wider">
-                    {getPresidentName(top3.leaders)}
-                  </p>
-                  <div className="mt-4 pt-3 border-t border-slate-800/40 text-center text-xs font-metadata">
-                    <p className="text-[9px] text-slate-500 font-bold uppercase">Projects Completed</p>
-                    <p className="text-white font-bold text-sm">{top3.totalProjects}</p>
-                  </div>
-                </GlassPanel>
-              </div>
-            )}
-
-          </div>
-        </section>
 
         {/* ================= CLUB DIRECTORY (SEARCH, FILTER & GRID) ================= */}
         <section>
