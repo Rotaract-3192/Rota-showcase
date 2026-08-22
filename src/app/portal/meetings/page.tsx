@@ -2,9 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import { Plus, Users, Calendar, Clock, FileText } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Users, Calendar, Clock, FileText } from "lucide-react";
 import GlassPanel from "@/components/GlassPanel";
 import { useMeetingList } from "@/queries/meeting.queries";
+import { useDeleteMeeting } from "@/mutations/meeting.mutations";
 
 export default function MeetingsPage() {
   const { data: listResult, isLoading } = useMeetingList({
@@ -13,6 +14,17 @@ export default function MeetingsPage() {
   });
 
   const meetings = listResult?.data || [];
+  const { mutateAsync: deleteMeeting, isPending: isDeleting } = useDeleteMeeting();
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this meeting report?")) {
+      try {
+        await deleteMeeting(id);
+      } catch (e) {
+        alert("Failed to delete meeting report");
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
@@ -45,6 +57,7 @@ export default function MeetingsPage() {
                   <th className="py-4 px-6">Date</th>
                   <th className="py-4 px-6 text-center">Attendees</th>
                   <th className="py-4 px-6">Minutes (MoM)</th>
+                  <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/40 text-slate-300">
@@ -61,6 +74,24 @@ export default function MeetingsPage() {
                     <td className="py-4 px-6 max-w-xs truncate text-slate-400 font-body text-sm" title={item.minutes_text || ""}>
                       <FileText className="w-3.5 h-3.5 text-slate-500 inline mr-1.5" />
                       {item.minutes_text || "No minutes recorded"}
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/portal/meetings/${item.id}`} className="p-1.5 text-slate-400 hover:text-ocean-glow transition-colors" title="View">
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link href={`/portal/meetings/report?edit=${item.id}`} className="p-1.5 text-slate-400 hover:text-electric-blue transition-colors" title="Edit">
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                        <button 
+                          onClick={() => handleDelete(item.id)} 
+                          disabled={isDeleting}
+                          className="p-1.5 text-slate-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -20,7 +20,7 @@ const reportSchema = z.object({
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
   sameAsStart: z.boolean().optional(),
-  activityType: z.enum(["Standalone", "Joint"]),
+  activityType: z.enum(["Standalone", "Joint", "Participatory Project with Sponsor Club"]),
   externalNGO: z.boolean().optional(),
   organizationName: z.string().optional(),
   avenues: z.array(z.string()).min(1, "Select at least one avenue."),
@@ -214,7 +214,7 @@ export default function ReportActivityPage() {
         club_id: club.id,
         title: data.title,
         slug: slug,
-        type: data.activityType === "Standalone" ? "PROJECT" : "EVENT",
+        type: (data.activityType === "Standalone" || data.activityType === "Participatory Project with Sponsor Club") ? "PROJECT" : "EVENT",
         description: data.description,
         status: "DRAFT",
         activity_category: data.activityType,
@@ -319,7 +319,16 @@ export default function ReportActivityPage() {
       </div>
 
       {/* Form Container */}
-      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="bg-navy-dark/40 border border-slate-800/60 p-6 md:p-8 rounded-2xl flex flex-col gap-6">
+      <form 
+        onSubmit={handleSubmit(onSubmit, onInvalid)} 
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && currentStep < 5) {
+            e.preventDefault();
+            nextStep(); // auto-advance to next step on Enter if desired, or just prevent
+          }
+        }}
+        className="bg-navy-dark/40 border border-slate-800/60 p-6 md:p-8 rounded-2xl flex flex-col gap-6"
+      >
         
         {/* STEP 1: Basic Info */}
         <div className={currentStep === 1 ? "block" : "hidden"}>
@@ -395,7 +404,7 @@ export default function ReportActivityPage() {
 
             <div className="flex flex-col gap-3">
               <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Activity Type *</label>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-6 flex-wrap">
                 <label className="flex items-center gap-2 text-sm text-slate-200">
                   <input type="radio" value="Standalone" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
                   Standalone Activity
@@ -403,6 +412,10 @@ export default function ReportActivityPage() {
                 <label className="flex items-center gap-2 text-sm text-slate-200">
                   <input type="radio" value="Joint" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
                   Joint Activity
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-200">
+                  <input type="radio" value="Participatory Project with Sponsor Club" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
+                  Participatory Project with Sponsor Club
                 </label>
               </div>
             </div>

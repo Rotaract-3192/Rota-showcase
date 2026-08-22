@@ -2,9 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import { Plus, BookOpen, Calendar, User, Users, Clipboard } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, BookOpen, Calendar, User, Users, Clipboard } from "lucide-react";
 import GlassPanel from "@/components/GlassPanel";
 import { useOrientationList } from "@/queries/orientation.queries";
+import { useDeleteOrientation } from "@/mutations/orientation.mutations";
 
 export default function OrientationsPage() {
   const { data: listResult, isLoading } = useOrientationList({
@@ -13,6 +14,17 @@ export default function OrientationsPage() {
   });
 
   const orientations = listResult?.data || [];
+  const { mutateAsync: deleteOrientation, isPending: isDeleting } = useDeleteOrientation();
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this orientation?")) {
+      try {
+        await deleteOrientation(id);
+      } catch (e) {
+        alert("Failed to delete orientation");
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
@@ -46,6 +58,7 @@ export default function OrientationsPage() {
                   <th className="py-4 px-6">Speaker / Facilitator</th>
                   <th className="py-4 px-6 text-center">New Inductions</th>
                   <th className="py-4 px-6">Remarks</th>
+                  <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/40 text-slate-300">
@@ -66,6 +79,24 @@ export default function OrientationsPage() {
                     <td className="py-4 px-6 max-w-xs truncate text-slate-400" title={item.remarks || ""}>
                       <Clipboard className="w-3.5 h-3.5 text-slate-500 inline mr-1.5" />
                       {item.remarks || "No remarks provided"}
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/portal/orientations/${item.id}`} className="p-1.5 text-slate-400 hover:text-ocean-glow transition-colors" title="View">
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link href={`/portal/orientations/report?edit=${item.id}`} className="p-1.5 text-slate-400 hover:text-electric-blue transition-colors" title="Edit">
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                        <button 
+                          onClick={() => handleDelete(item.id)} 
+                          disabled={isDeleting}
+                          className="p-1.5 text-slate-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

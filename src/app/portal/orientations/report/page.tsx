@@ -2,16 +2,23 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Save, Send, Loader2, Users } from "lucide-react";
-import { useCreateOrientation } from "@/mutations/orientation.mutations";
+import { useCreateOrientation, useUpdateOrientation } from "@/mutations/orientation.mutations";
+import { useOrientation } from "@/queries/orientation.queries";
 import { useProfile } from "@/hooks/useProfile";
 import PhotoUploadGroup from "@/components/PhotoUploadGroup";
 
 export default function ReportOrientationPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+  const { data: editData, isLoading: isEditLoading } = useOrientation(editId || "");
+
   const { club, profile, isLoading } = useProfile();
-  const { mutateAsync: createOrientation, isPending } = useCreateOrientation();
+  const { mutateAsync: createOrientation, isPending: isCreating } = useCreateOrientation();
+  const { mutateAsync: updateOrientation, isPending: isUpdating } = useUpdateOrientation();
+  const isPending = isCreating || isUpdating;
 
   // Form State
   const [name, setName] = useState("");
@@ -34,7 +41,32 @@ export default function ReportOrientationPage() {
     supportingImage2: null,
   });
 
-  if (isLoading) {
+  React.useEffect(() => {
+    if (editData) {
+      setDate(editData.date || "");
+      setSpeakerName(editData.speaker_name || "");
+      setParticipantsCount((editData.new_members_inducted || "").toString());
+      
+      // Attempt to parse rich remarks back into fields
+      const rm = editData.remarks || "";
+      const nameMatch = rm.match(/Orientation: (.*?)(?= \|)/);
+      if (nameMatch) setName(nameMatch[1]);
+      const venueMatch = rm.match(/Venue: (.*?)(?= \|)/);
+      if (venueMatch) setVenue(venueMatch[1]);
+      
+      const realRemarksMatch = rm.match(/Remarks: (.*)$/);
+      if (realRemarksMatch) setRemarks(realRemarksMatch[1]);
+      else setRemarks(rm);
+
+      setUploadedUrls({
+        coverImage: editData.cover_image || null,
+        supportingImage1: editData.supporting_image_1 || null,
+        supportingImage2: editData.supporting_image_2 || null,
+      });
+    }
+  }, [editData]);
+
+  if (isLoading || isEditLoading) {
     return (
       <div className="max-w-3xl mx-auto flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-electric-blue animate-spin" />
@@ -95,7 +127,7 @@ export default function ReportOrientationPage() {
   return;
 }
 
-      await createOrientation({
+      const payload = {
         club_id: club.id,
         date: date,
         speaker_name: speakerName || "Guest Facilitator",
@@ -104,7 +136,13 @@ export default function ReportOrientationPage() {
         cover_image: uploadedUrls.coverImage,
         supporting_image_1: uploadedUrls.supportingImage1,
         supporting_image_2: uploadedUrls.supportingImage2,
-      });
+      };
+
+      if (editId) {
+        await updateOrientation({ id: editId, payload });
+      } else {
+        await createOrientation(payload);
+      }
 
       router.push("/portal/orientations");
     } catch (err: any) {
@@ -118,7 +156,7 @@ export default function ReportOrientationPage() {
         <Link href="/portal/orientations" className="inline-flex items-center gap-2 text-xs font-metadata font-bold text-slate-500 hover:text-white uppercase mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back
         </Link>
-        <h1 className="font-headline text-3xl font-bold text-white tracking-tight">Report Orientation</h1>
+        <h1 className="font-headline text-3xl font-bold text-white tracking-tight">{editId ? "Edit" : "Report"} Orientation</h1>
       </div>
 
       <div className="bg-navy-dark/40 border border-slate-800/60 p-6 md:p-8 rounded-2xl flex flex-col gap-6">
@@ -232,20 +270,17 @@ export default function ReportOrientationPage() {
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isPending}
-              className="px-8 py-2.5 rounded-lg bg-electric-blue text-navy-deep hover:bg-ocean-glow transition-all text-sm font-bold flex items-center gap-2 disabled:opacity-55 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-electric-blue text-navy-deep font-bold text-xs uppercase tracking-wider hover:bg-ocean-glow hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
             >
               {isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
-                </>
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  <Send className="w-4 h-4" /> Submit
-                </>
+                <Save className="w-4 h-4" />
               )}
+              {editId ? "Update Report" : "Submit Report"}
             </button>
           </div>
         </form>
