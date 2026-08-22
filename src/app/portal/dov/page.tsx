@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Plus, Award, Calendar, BarChart, FileText } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Award, Calendar, BarChart, FileText } from "lucide-react";
 import GlassPanel from "@/components/GlassPanel";
 import { useDovList } from "@/queries/dov.queries";
 import { useDeleteDov } from "@/mutations/dov.mutations";
@@ -75,20 +75,23 @@ export default function DovPage() {
                       <FileText className="w-3.5 h-3.5 text-slate-500 inline mr-1.5" />
                       {item.remarks || "No remarks provided"}
                     </td>
-                    <td className="py-4 px-6 text-right space-x-3">
-                      <Link href={`/portal/dov/${item.id}`} className="text-electric-blue hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">
-                        View
-                      </Link>
-                      <Link href={`/portal/dov/report?edit=${item.id}`} className="text-amber-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">
-                        Edit
-                      </Link>
-                      <button 
-                        onClick={() => handleDelete(item.id)} 
-                        disabled={isDeleting}
-                        className="text-red-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider disabled:opacity-50"
-                      >
-                        Delete
-                      </button>
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/portal/dov/${item.id}`} className="p-1.5 text-slate-400 hover:text-ocean-glow transition-colors" title="View">
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link href={`/portal/dov/report?edit=${item.id}`} className="p-1.5 text-slate-400 hover:text-electric-blue transition-colors" title="Edit">
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                        <button 
+                          onClick={() => handleDelete(item.id)} 
+                          disabled={isDeleting}
+                          className="p-1.5 text-slate-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
