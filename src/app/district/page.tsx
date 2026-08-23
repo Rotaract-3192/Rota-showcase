@@ -69,19 +69,19 @@ const leadershipList: Leader[] = [
 
 const zoneDetails = [
   {
-    name: "Zone 1 (Bengaluru South & Rural)",
+    name: "Arnava",
     description: "Covers the southern metropolitan regions and surrounding rural zones like Kanakapura and Channapatna.",
     clubsCount: 14,
     clubs: ["RC Bengaluru South", "RC RV College of Engineering", "RC Jayanagar", "RC Dayananda Sagar"],
   },
   {
-    name: "Zone 2 (Bengaluru East & Central)",
+    name: "Pravaha",
     description: "Focuses on the central commercial zones, tech corridors (Whitefield, Outer Ring Road), and Indiranagar.",
     clubsCount: 16,
     clubs: ["RC Indira Nagar", "RC PES University", "RC Bengaluru West", "RC Christ University"],
   },
   {
-    name: "Zone 3 (Tumakuru, Kengeri & North)",
+    name: "Taranga",
     description: "Covers highway belts, Kengeri suburbs, and outstation clubs in Tumakuru and rural Kolar.",
     clubsCount: 12,
     clubs: ["RC Tumakuru Elite", "RC Kengeri Central", "RC Kolar Gold Fields", "RC Tumakuru Town"],
@@ -141,7 +141,7 @@ const districtEvents = [
   { id: "e_1", title: "Rotaract District Assembly 2026", date: "July 12, 2026", day: 12, time: "09:00 AM - 05:00 PM", location: "RVCE Auditorium, Bengaluru", category: "Assembly", desc: "The grand annual training conclave for all incoming club officers in District 3192." },
   { id: "e_2", title: "Leadership Boot Camp: Ripple 2026", date: "July 15, 2026", day: 15, time: "10:30 AM - 04:00 PM", location: "Rotary House of Friendship, Lavelle Road", category: "Training", desc: "A rigorous leadership training workshop focusing on project design and volunteer mobilization." },
   { id: "e_3", title: "RC Bengaluru South 35th Installation", date: "July 18, 2026", day: 18, time: "06:00 PM - 09:00 PM", location: "Grand Palace Hall, Bengaluru", category: "Installation", desc: "The formal board induction ceremony for the incoming president Rtr. Ananya Sharma and her board." },
-  { id: "e_4", title: "Mega Tree Plantation Drive - Zone 1", date: "July 25, 2026", day: 25, time: "07:30 AM - 12:00 PM", location: "Turahalli Forest Reserve", category: "Service", desc: "District-wide environmental service project focusing on native tree afforestation." }
+  { id: "e_4", title: "Mega Tree Plantation Drive - Arnava", date: "July 25, 2026", day: 25, time: "07:30 AM - 12:00 PM", location: "Turahalli Forest Reserve", category: "Service", desc: "District-wide environmental service project focusing on native tree afforestation." }
 ];
 
 export default function DistrictPage() {
@@ -374,13 +374,13 @@ export default function DistrictPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-metadata">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Zone 1
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Arnava
                     </span>
                     <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-metadata">
-                      <span className="w-2.5 h-2.5 rounded-full bg-electric-blue" /> Zone 2
+                      <span className="w-2.5 h-2.5 rounded-full bg-electric-blue" /> Pravaha
                     </span>
                     <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-metadata">
-                      <span className="w-2.5 h-2.5 rounded-full bg-pink-500" /> Zone 3
+                      <span className="w-2.5 h-2.5 rounded-full bg-pink-500" /> Taranga
                     </span>
                   </div>
                 </div>
@@ -388,11 +388,11 @@ export default function DistrictPage() {
                 {/* SVG MAP SHAPE REPRESENTING DISTRICT */}
                 <div className="relative flex-grow flex items-center justify-center p-4">
                   <svg viewBox="0 0 800 500" className="w-full max-w-[650px] aspect-[800/500] fill-none stroke-slate-800/60 stroke-[1.5]">
-                    {/* Zone 3 Outline (North / Tumakuru) */}
+                    {/* Taranga Outline (North / Tumakuru) */}
                     <path d="M 100 150 L 320 80 L 380 200 L 300 350 L 150 320 Z" fill="rgba(236, 72, 153, 0.02)" stroke="rgba(236, 72, 153, 0.2)" strokeDasharray="4 4" className="transition-all hover:fill-pink-500/[0.04]" />
-                    {/* Zone 1 Outline (South / Rural) */}
+                    {/* Arnava Outline (South / Rural) */}
                     <path d="M 300 350 L 420 220 L 520 300 L 490 450 L 350 420 Z" fill="rgba(16, 185, 129, 0.02)" stroke="rgba(16, 185, 129, 0.2)" strokeDasharray="4 4" className="transition-all hover:fill-emerald-500/[0.04]" />
-                    {/* Zone 2 Outline (Central / East / Kolar) */}
+                    {/* Pravaha Outline (Central / East / Kolar) */}
                     <path d="M 420 220 L 550 150 L 750 180 L 700 320 L 520 300 Z" fill="rgba(0, 240, 255, 0.02)" stroke="rgba(0, 240, 255, 0.2)" strokeDasharray="4 4" className="transition-all hover:fill-electric-blue/[0.04]" />
 
                     {/* Regional Labels */}
@@ -403,18 +403,18 @@ export default function DistrictPage() {
 
                   {/* Club Pins Overlay */}
                   {[
-                    { id: "p1", name: "RC Bengaluru South", x: 45, y: 55, zone: "Zone 1", color: "bg-emerald-500 shadow-emerald-500/20", president: "Rtr. Ananya Sharma", projects: 32, points: 1250, location: "Kanakapura Rural" },
-                    { id: "p2", name: "RC RV College of Engineering", x: 40, y: 52, zone: "Zone 1", color: "bg-emerald-500 shadow-emerald-500/20", president: "Rtr. Rohan Kamath", projects: 45, points: 1580, location: "Mysore Road, RVCE" },
-                    { id: "p3", name: "RC Jayanagar", x: 47, y: 50, zone: "Zone 1", color: "bg-emerald-500 shadow-emerald-500/20", president: "Rtr. Kavya Shree", projects: 36, points: 1350, location: "Jayanagar" },
-                    { id: "p4", name: "RC Dayananda Sagar", x: 46, y: 58, zone: "Zone 1", color: "bg-emerald-500 shadow-emerald-500/20", president: "Rtr. Kiran Kumar", projects: 25, points: 890, location: "Kanakapura Road" },
-                    { id: "p5", name: "RC Indira Nagar", x: 53, y: 44, zone: "Zone 2", color: "bg-electric-blue shadow-electric-blue/20", president: "Rtr. Vikram Aditya", projects: 28, points: 1420, location: "Indiranagar" },
-                    { id: "p6", name: "RC PES University", x: 38, y: 46, zone: "Zone 2", color: "bg-electric-blue shadow-electric-blue/20", president: "Rtr. Meghna Iyer", projects: 39, points: 1100, location: "Banashankari" },
-                    { id: "p7", name: "RC Bengaluru West", x: 43, y: 42, zone: "Zone 2", color: "bg-electric-blue shadow-electric-blue/20", president: "Rtr. Sneha Patel", projects: 41, points: 1610, location: "Rajajinagar" },
-                    { id: "p8", name: "RC Christ University", x: 49, y: 47, zone: "Zone 2", color: "bg-electric-blue shadow-electric-blue/20", president: "Rtr. David Paul", projects: 30, points: 950, location: "Hosur Road" },
-                    { id: "p9", name: "RC Tumakuru Elite", x: 25, y: 30, zone: "Zone 3", color: "bg-pink-500 shadow-pink-500/20", president: "Rtr. Siddarth Gowda", projects: 24, points: 980, location: "Tumakuru" },
-                    { id: "p10", name: "RC Kengeri Central", x: 32, y: 48, zone: "Zone 3", color: "bg-pink-500 shadow-pink-500/20", president: "Rtr. Harish Kumar", projects: 18, points: 720, location: "Kengeri" },
-                    { id: "p11", name: "RC Kolar Gold Fields", x: 78, y: 40, zone: "Zone 3", color: "bg-pink-500 shadow-pink-500/20", president: "Rtr. Divya N", projects: 15, points: 650, location: "Kolar" },
-                    { id: "p12", name: "RC Tumakuru Town", x: 23, y: 25, zone: "Zone 3", color: "bg-pink-500 shadow-pink-500/20", president: "Rtr. Manoj S", projects: 20, points: 780, location: "Tumakuru Town" }
+                    { id: "p1", name: "RC Bengaluru South", x: 45, y: 55, zone: "Arnava", color: "bg-emerald-500 shadow-emerald-500/20", president: "Rtr. Ananya Sharma", projects: 32, points: 1250, location: "Kanakapura Rural" },
+                    { id: "p2", name: "RC RV College of Engineering", x: 40, y: 52, zone: "Arnava", color: "bg-emerald-500 shadow-emerald-500/20", president: "Rtr. Rohan Kamath", projects: 45, points: 1580, location: "Mysore Road, RVCE" },
+                    { id: "p3", name: "RC Jayanagar", x: 47, y: 50, zone: "Arnava", color: "bg-emerald-500 shadow-emerald-500/20", president: "Rtr. Kavya Shree", projects: 36, points: 1350, location: "Jayanagar" },
+                    { id: "p4", name: "RC Dayananda Sagar", x: 46, y: 58, zone: "Arnava", color: "bg-emerald-500 shadow-emerald-500/20", president: "Rtr. Kiran Kumar", projects: 25, points: 890, location: "Kanakapura Road" },
+                    { id: "p5", name: "RC Indira Nagar", x: 53, y: 44, zone: "Pravaha", color: "bg-electric-blue shadow-electric-blue/20", president: "Rtr. Vikram Aditya", projects: 28, points: 1420, location: "Indiranagar" },
+                    { id: "p6", name: "RC PES University", x: 38, y: 46, zone: "Pravaha", color: "bg-electric-blue shadow-electric-blue/20", president: "Rtr. Meghna Iyer", projects: 39, points: 1100, location: "Banashankari" },
+                    { id: "p7", name: "RC Bengaluru West", x: 43, y: 42, zone: "Pravaha", color: "bg-electric-blue shadow-electric-blue/20", president: "Rtr. Sneha Patel", projects: 41, points: 1610, location: "Rajajinagar" },
+                    { id: "p8", name: "RC Christ University", x: 49, y: 47, zone: "Pravaha", color: "bg-electric-blue shadow-electric-blue/20", president: "Rtr. David Paul", projects: 30, points: 950, location: "Hosur Road" },
+                    { id: "p9", name: "RC Tumakuru Elite", x: 25, y: 30, zone: "Taranga", color: "bg-pink-500 shadow-pink-500/20", president: "Rtr. Siddarth Gowda", projects: 24, points: 980, location: "Tumakuru" },
+                    { id: "p10", name: "RC Kengeri Central", x: 32, y: 48, zone: "Taranga", color: "bg-pink-500 shadow-pink-500/20", president: "Rtr. Harish Kumar", projects: 18, points: 720, location: "Kengeri" },
+                    { id: "p11", name: "RC Kolar Gold Fields", x: 78, y: 40, zone: "Taranga", color: "bg-pink-500 shadow-pink-500/20", president: "Rtr. Divya N", projects: 15, points: 650, location: "Kolar" },
+                    { id: "p12", name: "RC Tumakuru Town", x: 23, y: 25, zone: "Taranga", color: "bg-pink-500 shadow-pink-500/20", president: "Rtr. Manoj S", projects: 20, points: 780, location: "Tumakuru Town" }
                   ].map((pin) => (
                     <button
                       key={pin.id}
@@ -424,7 +424,7 @@ export default function DistrictPage() {
                     >
                       {/* Pulse Ring */}
                       <span className={`absolute -inset-1.5 rounded-full animate-ping opacity-60 ${
-                        pin.zone === "Zone 1" ? "bg-emerald-500" : pin.zone === "Zone 2" ? "bg-electric-blue" : "bg-pink-500"
+                        pin.zone === "Arnava" ? "bg-emerald-500" : pin.zone === "Pravaha" ? "bg-electric-blue" : "bg-pink-500"
                       }`} />
                       {/* Anchor pin dot */}
                       <div className={`w-3.5 h-3.5 rounded-full border border-white/60 shadow-lg ${pin.color}`} />

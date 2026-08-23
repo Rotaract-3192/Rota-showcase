@@ -18,7 +18,7 @@ interface Publication {
 const mockPublications: Publication[] = [
   { id: "pub_1", title: "District Assembly 2026: Official Guidelines", category: "Circular", author: "DRR Team", date: "2026-06-25", status: "Published" },
   { id: "pub_2", title: "Ocean of Impact: June 2026 Edition", category: "Newsletter", author: "Editorial Board", date: "2026-06-20", status: "Published" },
-  { id: "pub_3", title: "Rotaract Day Celebrations in Zone 2", category: "Blog", author: "Rtr. Ananya", date: "2026-06-15", status: "Draft" },
+  { id: "pub_3", title: "Rotaract Day Celebrations in Pravaha", category: "Blog", author: "Rtr. Ananya", date: "2026-06-15", status: "Draft" },
 ];
 
 export default function AdminPublicationsPage() {

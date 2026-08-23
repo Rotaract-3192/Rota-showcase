@@ -17,7 +17,7 @@ interface DistrictEvent {
 const mockEvents: DistrictEvent[] = [
   { id: "e_1", title: "Rotaract District Assembly 2026", date: "July 12, 2026", time: "09:00 AM", location: "RVCE Auditorium, Bengaluru", category: "Assembly" },
   { id: "e_2", title: "Rotaract Club of Bengaluru South 35th Installation", date: "July 18, 2026", time: "06:00 PM", location: "Grand Palace Hall, Bengaluru", category: "Installation" },
-  { id: "e_3", title: "Mega Tree Plantation Drive - Zone 1", date: "July 25, 2026", time: "07:30 AM", location: "Turahalli Forest Reserve", category: "Service" },
+  { id: "e_3", title: "Mega Tree Plantation Drive - Arnava", date: "July 25, 2026", time: "07:30 AM", location: "Turahalli Forest Reserve", category: "Service" },
 ];
 
 export default function AdminCalendarPage() {
@@ -220,7 +220,7 @@ export default function AdminCalendarPage() {
                 <input 
                   type="text" 
                   required
-                  placeholder="e.g. Zone 2 Officers Training Seminar"
+                  placeholder="e.g. Pravaha Officers Training Seminar"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 focus:border-electric-blue/40 text-xs text-white focus:outline-none placeholder-slate-600"

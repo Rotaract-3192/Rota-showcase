@@ -31,7 +31,7 @@ export default function AdminUsersPage() {
     email: "",
     phone: "",
     clubId: "",
-    role: "General Member"
+    role: "President"
   });
   const [inviting, setInviting] = useState(false);
 
@@ -43,7 +43,7 @@ export default function AdminUsersPage() {
     last_name: "",
     phone: "",
     club_id: "",
-    role: "Member"
+    role: "President"
   });
   const [saving, setSaving] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -63,7 +63,7 @@ export default function AdminUsersPage() {
           phone: u.phone || "",
           clubId: u.club_id || "",
           clubName: u.clubs?.name || "No Club Affiliation",
-          role: u.member_roles?.[0]?.role || "Member",
+          role: u.member_roles?.[0]?.role || "President",
           status: (u.auth_id?.startsWith("pending_") ? "Pending" : "Active") as 'Active' | 'Suspended' | 'Pending',
           joinedDate: u.created_at || new Date().toISOString()
         }));
@@ -117,7 +117,7 @@ export default function AdminUsersPage() {
         email: "",
         phone: "",
         clubId: "",
-        role: "General Member"
+        role: "President"
       });
       await fetchUsers();
     } catch (err: any) {
@@ -180,11 +180,52 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.clubName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [roleFilter, setRoleFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.clubName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === "All" || user.role === roleFilter;
+    const matchesStatus = statusFilter === "All" || user.status === statusFilter;
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const uniqueRoles = Array.from(new Set(users.map(u => u.role))).sort();
+  const uniqueStatuses = Array.from(new Set(users.map(u => u.status))).sort();
+
+  const filterContent = isFilterOpen ? (
+    <div className="flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+      <div className="flex flex-col gap-1.5 flex-1">
+        <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata tracking-wider">Role</label>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-sm text-slate-200 focus:outline-none focus:border-electric-blue/50"
+        >
+          <option value="All">All Roles</option>
+          {uniqueRoles.map(role => (
+            <option key={role} value={role}>{role}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-col gap-1.5 flex-1">
+        <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata tracking-wider">Status</label>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-sm text-slate-200 focus:outline-none focus:border-electric-blue/50"
+        >
+          <option value="All">All Statuses</option>
+          {uniqueStatuses.map(status => (
+            <option key={status} value={status}>{status}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="flex flex-col gap-6 max-w-[1600px] mx-auto pb-12 animate-fade-in">
@@ -215,6 +256,8 @@ export default function AdminUsersPage() {
           data={filteredUsers}
         searchPlaceholder="Search by name, email, or club..."
         onSearch={setSearchTerm}
+        onFilterClick={() => setIsFilterOpen(!isFilterOpen)}
+        filterContent={filterContent}
         columns={[
           {
             header: "User",
@@ -387,13 +430,11 @@ export default function AdminUsersPage() {
                   onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
                   className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 font-body appearance-none cursor-pointer font-bold"
                 >
-                  <option value="General Member" className="bg-navy-deep text-white">General Member</option>
-                  <option value="President" className="bg-navy-deep text-white">Club President</option>
-                  <option value="Secretary" className="bg-navy-deep text-white">Club Secretary</option>
-                  <option value="Board Member" className="bg-navy-deep text-white">Club Board Member</option>
+                  <option value="President" className="bg-navy-deep text-white">President</option>
+                  <option value="Vice President" className="bg-navy-deep text-white">Vice President</option>
+                  <option value="Secretary" className="bg-navy-deep text-white">Secretary</option>
+                  <option value="ZRR" className="bg-navy-deep text-white">ZRR</option>
                   <option value="District Admin" className="bg-navy-deep text-white">District Admin</option>
-                  <option value="District Core Team" className="bg-navy-deep text-white">District Core Team</option>
-                  <option value="District Rotaract Secretary" className="bg-navy-deep text-white">District Rotaract Secretary</option>
                   <option value="Super Admin" className="bg-navy-deep text-white">Super Admin</option>
                 </select>
               </div>
@@ -579,12 +620,11 @@ export default function AdminUsersPage() {
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                   className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 font-body appearance-none cursor-pointer font-bold"
                 >
-                  <option value="General Member" className="bg-navy-deep text-white">General Member</option>
-                  <option value="President" className="bg-navy-deep text-white">Club President</option>
-                  <option value="Secretary" className="bg-navy-deep text-white">Club Secretary</option>
-                  <option value="Board Member" className="bg-navy-deep text-white">Club Board Member</option>
+                  <option value="President" className="bg-navy-deep text-white">President</option>
+                  <option value="Vice President" className="bg-navy-deep text-white">Vice President</option>
+                  <option value="Secretary" className="bg-navy-deep text-white">Secretary</option>
+                  <option value="ZRR" className="bg-navy-deep text-white">ZRR</option>
                   <option value="District Admin" className="bg-navy-deep text-white">District Admin</option>
-                  <option value="District Core Team" className="bg-navy-deep text-white">District Core Team</option>
                   <option value="Super Admin" className="bg-navy-deep text-white">Super Admin</option>
                 </select>
               </div>

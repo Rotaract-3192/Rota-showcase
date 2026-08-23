@@ -144,7 +144,7 @@ export default function ProfilePage() {
               <div className="p-4 rounded-xl bg-navy-deep/60 border border-slate-800">
                 <p className="text-[10px] font-metadata text-slate-500 uppercase font-bold tracking-wider">Club Zone</p>
                 <div className="flex items-center gap-2 mt-2 text-md font-headline font-bold text-white uppercase">
-                  {club?.slug || "Zone 1"}
+                  {club?.slug || "Arnava"}
                 </div>
               </div>
               <div className="p-4 rounded-xl bg-navy-deep/60 border border-slate-800">

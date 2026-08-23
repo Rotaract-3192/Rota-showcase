@@ -50,15 +50,7 @@ export default function ReportInstallationPage() {
       setChiefGuest(editData.chief_guest || "");
       setVenue(editData.venue || "");
       
-      const rm = editData.remarks || "";
-      const timeMatch = rm.match(/Time: (.*?) to/);
-      if (timeMatch) setStartTime(timeMatch[1]);
-      const endTimeMatch = rm.match(/to (.*?)\. Remarks:/);
-      if (endTimeMatch) setEndTime(endTimeMatch[1]);
-
-      const trueRemarksMatch = rm.match(/Remarks: (.*)$/);
-      if (trueRemarksMatch) setRemarks(trueRemarksMatch[1]);
-      else setRemarks(rm);
+      // No remarks parsing needed for installations
 
       setUploadedUrls({
         coverImage: editData.cover_image || null,
@@ -118,23 +110,29 @@ export default function ReportInstallationPage() {
       setErrorMsg("");
 
       if (!club?.id || !profile?.id) {
-  setErrorMsg(
-    "Unable to load your club profile. Please refresh the page and try again."
-  );
-  return;
-}
+        setErrorMsg(
+          "Unable to load your club profile. Please refresh the page and try again."
+        );
+        return;
+      }
 
-await createInstallation({
-  club_id: club.id,
-  name: eventName || "Club Installation Board",
-  date,
-  venue: venue || "Virtual / TBD",
-  incoming_president_id: profile.id,
-  chief_guest: chiefGuest || null,
-  cover_image: uploadedUrls.coverImage,
-  supporting_image_1: uploadedUrls.supportingImage1,
-  supporting_image_2: uploadedUrls.supportingImage2,
-});
+      const payload = {
+        club_id: club.id,
+        name: eventName || "Club Installation Board",
+        date,
+        venue: venue || "Virtual / TBD",
+        incoming_president_id: profile.id,
+        chief_guest: chiefGuest || null,
+        cover_image: uploadedUrls.coverImage,
+        supporting_image_1: uploadedUrls.supportingImage1,
+        supporting_image_2: uploadedUrls.supportingImage2,
+      };
+
+      if (editId) {
+        await updateInstallation({ id: editId, payload });
+      } else {
+        await createInstallation(payload);
+      }
 
       router.push("/portal/installations");
     } catch (err: any) {
