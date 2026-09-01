@@ -2,11 +2,26 @@
 
 import { activityService } from '@/services/activity.service';
 import type { Database } from '@/types/database.types';
+import { requirePortalActor, assertCanAccessClubRecord } from '@/lib/portal-auth';
+
+function assignClubId<T extends { club_id?: string | null }>(payload: T, clubId: string | null, isDistrict: boolean): T {
+  if (isDistrict) {
+    if (!payload.club_id) {
+      throw new Error('Club is required to save this report.');
+    }
+    return payload;
+  }
+  if (!clubId) {
+    throw new Error('You must be assigned to a club to submit reports.');
+  }
+  return { ...payload, club_id: clubId };
+}
 
 export async function createActivityAction(payload: Database['public']['Tables']['activities']['Insert']) {
-  const result = await activityService.create(payload);
+  const actor = await requirePortalActor();
+  const scoped = assignClubId(payload, actor.clubId, actor.isDistrict);
+  const result = await activityService.create(scoped);
   
-  // Try to notify admins about the new activity submission
   try {
     const { notifyRoleAction } = await import('@/actions/notification.actions');
     await Promise.all([
@@ -21,9 +36,18 @@ export async function createActivityAction(payload: Database['public']['Tables']
 }
 
 export async function updateActivityAction(id: string, payload: Database['public']['Tables']['activities']['Update']) {
-  return await activityService.update(id, payload);
+  const actor = await requirePortalActor();
+  const existing = await activityService.getById(id);
+  if (!existing) throw new Error('Activity not found.');
+  assertCanAccessClubRecord(actor, existing.club_id);
+  const { club_id: _ignored, ...rest } = payload;
+  return await activityService.update(id, actor.isDistrict ? payload : rest);
 }
 
 export async function deleteActivityAction(id: string) {
+  const actor = await requirePortalActor();
+  const existing = await activityService.getById(id);
+  if (!existing) throw new Error('Activity not found.');
+  assertCanAccessClubRecord(actor, existing.club_id);
   return await activityService.delete(id);
 }

@@ -55,6 +55,7 @@ export default function InstallationsPage() {
               <thead>
                 <tr className="border-b border-slate-800/60 bg-navy-dark/50 text-slate-500 font-bold uppercase tracking-wider">
                   <th className="py-4 px-6">Date</th>
+                  <th className="py-4 px-6">Installation</th>
                   <th className="py-4 px-6">Venue</th>
                   <th className="py-4 px-6">Chief Guest</th>
                   <th className="py-4 px-6 text-right">Actions</th>
@@ -66,6 +67,9 @@ export default function InstallationsPage() {
                     <td className="py-4 px-6 font-bold flex items-center gap-2 text-white">
                       <Calendar className="w-3.5 h-3.5 text-slate-500" />
                       {new Date(item.date).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </td>
+                    <td className="py-4 px-6 font-bold text-white">
+                      {item.name || "Untitled Installation"}
                     </td>
                     <td className="py-4 px-6">
                       <MapPin className="w-3.5 h-3.5 text-slate-500 inline mr-1.5" />

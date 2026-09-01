@@ -33,7 +33,7 @@ export default function HomePage() {
     totalBeneficiaries: 0,
     volunteerHours: 0,
     contributions: 0,
-    activeClubs: 85,
+    activeClubs: 0,
   });
   const [dbProjects, setDbProjects] = useState<any[]>([]);
 
@@ -221,19 +221,33 @@ export default function HomePage() {
           </motion.p>
 
           {/* CTA Buttons */}
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-5 mt-8">
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 mt-8 w-full max-w-xl">
             <Link
-              href="/projects"
+              href="/portal/activities/report"
               className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-electric-blue text-navy-deep font-black text-sm uppercase tracking-wider overflow-hidden hover:scale-105 transition-transform duration-300 shadow-[0_0_25px_rgba(0,240,255,0.4)]"
             >
               <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-              Explore Projects
+              Report a Project
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             
             <Link
+              href="/login"
+              className="inline-flex items-center justify-center px-8 py-4 rounded-full border border-electric-blue/40 bg-navy-dark/40 text-white font-black text-sm uppercase tracking-wider hover:bg-electric-blue/10 hover:border-electric-blue transition-all duration-300 backdrop-blur-sm"
+            >
+              Login
+            </Link>
+          </motion.div>
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 mt-2">
+            <Link
+              href="/projects"
+              className="inline-flex items-center justify-center px-5 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-white transition-colors"
+            >
+              Explore Projects
+            </Link>
+            <Link
               href="/leaderboard"
-              className="inline-flex items-center justify-center px-8 py-4 rounded-full border border-slate-700/60 bg-navy-dark/40 text-slate-200 font-semibold text-sm uppercase tracking-wider hover:bg-slate-800 hover:text-white hover:border-slate-500 transition-all duration-300 backdrop-blur-sm"
+              className="inline-flex items-center justify-center px-5 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-white transition-colors"
             >
               View Rankings
             </Link>
@@ -488,23 +502,23 @@ export default function HomePage() {
             
             <div className="flex flex-col sm:flex-row gap-4 mt-6 w-full sm:w-auto">
               <Link
-                href="/projects"
+                href="/portal/activities/report"
                 className="group relative inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-electric-blue text-navy-deep font-bold text-xs uppercase tracking-wider overflow-hidden hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(0,240,255,0.3)]"
               >
                 <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-                Explore Projects
-              </Link>
-              <Link
-                href="/clubs"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-transparent border border-slate-700/60 text-slate-200 font-semibold text-xs uppercase tracking-wider hover:bg-slate-800 hover:border-slate-500 transition-all duration-300"
-              >
-                Explore Clubs
+                Report a Project
               </Link>
               <Link
                 href="/login"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-transparent border border-electric-blue/40 text-white font-bold text-xs uppercase tracking-wider hover:bg-electric-blue/10 hover:border-electric-blue transition-all duration-300"
+              >
+                Login
+              </Link>
+              <Link
+                href="/projects"
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-navy-dark text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700 font-medium text-xs uppercase tracking-wider transition-all duration-300"
               >
-                Club Login
+                Explore Projects
               </Link>
             </div>
           </GlassPanel>

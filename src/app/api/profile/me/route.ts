@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { authService } from '@/services/auth.service';
+import { linkAndLoadMemberProfile } from '@/lib/member-sync';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,42 +13,19 @@ export async function GET(req: NextRequest) {
     let data = await authService.getFullUserProfile(userId);
 
     if (!data) {
-      console.log("Profile not found by auth_id, checking email...");
-      const user = await (await import('@clerk/nextjs/server')).currentUser();
-      const email = user?.emailAddresses?.[0]?.emailAddress || '';
-
-      const supabase = await (await import('@/lib/supabase-server')).createServerSupabaseClient();
-      
-      const { data: existingProfile } = await supabase
-        .from('member_profiles')
-        .select('id')
-        .ilike('email', email)
-        .single();
-
-      if (existingProfile) {
-        console.log("Found existing profile by email, linking auth_id...");
-        await supabase
-          .from('member_profiles')
-          .update({ auth_id: userId })
-          .eq('id', existingProfile.id);
-        
-        // Also update any pending notifications
-        await supabase
-          .from('notifications')
-          .update({ user_id: userId })
-          .eq('user_id', `pending_${email}`);
-      } else {
-        console.log("No profile found, creating new profile...");
-        const nameParts = (user?.fullName || email.split('@')[0]).split(' ');
-        await supabase.from('member_profiles').insert({
-          auth_id: userId,
-          first_name: nameParts[0] || 'Unknown',
-          last_name: nameParts.slice(1).join(' ') || 'User',
-          email: email
-        });
+      const user = await currentUser();
+      const emails = (user?.emailAddresses || []).map((e) => e.emailAddress).filter(Boolean);
+      const linked = await linkAndLoadMemberProfile(userId, emails);
+      if (linked) {
+        data = await authService.getFullUserProfile(userId);
       }
+    }
 
-      data = await authService.getFullUserProfile(userId);
+    if (!data) {
+      return NextResponse.json(
+        { error: 'No district profile is linked to this account. Ask an admin to provision access.' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(data);

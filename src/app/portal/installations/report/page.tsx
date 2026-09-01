@@ -47,6 +47,7 @@ export default function ReportInstallationPage() {
   React.useEffect(() => {
     if (editData) {
       setDate(editData.date || "");
+      setEventName(editData.name || "");
       setChiefGuest(editData.chief_guest || "");
       setVenue(editData.venue || "");
       
@@ -97,6 +98,10 @@ export default function ReportInstallationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!eventName.trim()) {
+      setErrorMsg("Installation name is required.");
+      return;
+    }
     if (!date) {
       setErrorMsg("Please select a date.");
       return;
@@ -118,7 +123,7 @@ export default function ReportInstallationPage() {
 
       const payload = {
         club_id: club.id,
-        name: eventName || "Club Installation Board",
+        name: eventName.trim(),
         date,
         venue: venue || "Virtual / TBD",
         incoming_president_id: profile.id,

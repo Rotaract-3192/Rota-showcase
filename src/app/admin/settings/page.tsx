@@ -158,7 +158,7 @@ export default function AdminSettingsPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">District DRR</label>
+                  <label className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">DRR</label>
                   <input 
                     type="text" 
                     value={general.districtDrr}

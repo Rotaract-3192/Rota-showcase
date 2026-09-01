@@ -3,8 +3,8 @@ import Sidebar from "@/components/Sidebar";
 import TopNavigation from "@/components/TopNavigation";
 import { PortalUserProvider } from "@/components/PortalUserProvider";
 import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
-import { generateSupabaseJWT } from "@/lib/jwt";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { fetchMemberRoles, linkAndLoadMemberProfile } from "@/lib/member-sync";
 
 export const metadata = {
   title: "Command Center | District 3192",
@@ -22,44 +22,18 @@ export default async function PortalLayout({
     redirect("/login");
   }
 
-  // Use service-role JWT fetch (same as sync page) to bypass RLS
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const bearerToken = await generateSupabaseJWT("service_role");
-
-  const headers = {
-    apikey: apiKey,
-    Authorization: `Bearer ${bearerToken}`,
-    "Content-Type": "application/json",
-  };
+  const user = await currentUser();
+  const emails = (user?.emailAddresses || []).map((e) => e.emailAddress).filter(Boolean);
 
   try {
-    // Fetch profile by Clerk auth_id
-    const profileRes = await fetch(
-      `${supabaseUrl}/rest/v1/member_profiles?auth_id=eq.${encodeURIComponent(userId)}&select=id,first_name,last_name,email,club_id&deleted_at=is.null`,
-      { headers, cache: "no-store" }
-    );
+    const profile = await linkAndLoadMemberProfile(userId, emails);
 
-    if (!profileRes.ok) {
-      redirect("/sync");
+    if (!profile) {
+      redirect("/login?error=unauthorized");
     }
 
-    const profiles = await profileRes.json();
-    if (!profiles || profiles.length === 0) {
-      // Profile not found - go back to sync to link it
-      redirect("/sync");
-    }
-
-    const profile = profiles[0];
-
-    // Fetch roles
-    const rolesRes = await fetch(
-      `${supabaseUrl}/rest/v1/member_roles?member_id=eq.${profile.id}&select=role&deleted_at=is.null`,
-      { headers, cache: "no-store" }
-    );
-
-    const roles = rolesRes.ok ? await rolesRes.json() : [];
-    const roleName = roles?.[0]?.role || "Member";
+    const roles = await fetchMemberRoles(profile.id);
+    const roleName = roles[0] || "Member";
     const fullName = [profile.first_name, profile.last_name]
       .filter(Boolean)
       .join(" ");
@@ -72,10 +46,8 @@ export default async function PortalLayout({
     return (
       <PortalUserProvider user={portalUser}>
         <div className="min-h-screen bg-navy-deep text-slate-200 font-body">
-          {/* Sidebar is fixed on the left (w-64) */}
           <Sidebar />
 
-          {/* Main content area offset by sidebar width on desktop */}
           <div className="md:pl-64 flex flex-col min-h-screen">
             <TopNavigation />
             <main className="flex-1 p-6 md:p-8 overflow-x-hidden">
@@ -87,6 +59,6 @@ export default async function PortalLayout({
     );
   } catch (err) {
     console.error("[PortalLayout] Error fetching profile:", err);
-    redirect("/sync");
+    redirect("/login?error=unauthorized");
   }
 }

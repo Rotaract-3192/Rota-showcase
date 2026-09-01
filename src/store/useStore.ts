@@ -366,7 +366,7 @@ export const useStore = create<StoreState>((set, get) => ({
     totalBeneficiaries: 0,
     volunteerHours: 0,
     contributions: 0,
-    activeClubs: 85,
+    activeClubs: 0,
   },
   
   projectFilters: {

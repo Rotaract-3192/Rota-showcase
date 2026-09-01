@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Calendar, User, MapPin, Clipboard, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, User, MapPin, Clipboard, Loader2, Award } from "lucide-react";
 import GlassPanel from "@/components/GlassPanel";
 import { useInstallation } from "@/queries/installation.queries";
 
@@ -38,7 +38,7 @@ export default function InstallationViewPage() {
         <Link href="/portal/installations" className="inline-flex items-center gap-2 text-xs font-metadata font-bold text-slate-500 hover:text-white uppercase mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to List
         </Link>
-        <h1 className="font-headline text-3xl font-bold text-white tracking-tight">Installation Details</h1>
+        <h1 className="font-headline text-3xl font-bold text-white tracking-tight">{installation.name || "Installation Details"}</h1>
       </div>
 
       <GlassPanel className="p-8 border-slate-800/60 bg-navy-dark/40 flex flex-col gap-6">
@@ -56,6 +56,15 @@ export default function InstallationViewPage() {
             </span>
           </div>
           
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-metadata text-slate-500 uppercase tracking-wider font-bold flex items-center gap-2">
+              <Award className="w-3.5 h-3.5" /> Installation Name
+            </span>
+            <span className="text-slate-200 font-medium">
+              {installation.name || "N/A"}
+            </span>
+          </div>
+
           <div className="flex flex-col gap-2">
             <span className="text-xs font-metadata text-slate-500 uppercase tracking-wider font-bold flex items-center gap-2">
               <User className="w-3.5 h-3.5" /> Chief Guest

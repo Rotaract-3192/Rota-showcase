@@ -16,6 +16,8 @@ export async function GET() {
         'apikey': apiKey,
         'Authorization': `Bearer ${bearerToken}`,
         'Content-Type': 'application/json',
+        'Range': '0-999',
+        'Prefer': 'count=exact',
       },
     });
 

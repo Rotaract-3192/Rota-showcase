@@ -60,7 +60,7 @@ export default function DashboardPage() {
     totalBeneficiaries: 0,
     volunteerHours: 0,
     contributions: 0,
-    activeClubs: 85
+    activeClubs: 0
   });
   const [trendData, setTrendData] = useState<any[]>([]);
   const [avenueData, setAvenueData] = useState<any[]>([]);
@@ -129,11 +129,20 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="font-headline text-3xl font-bold text-white tracking-tight">Mission Control</h1>
-        <p className="text-slate-400 text-sm font-body mt-1">
-          Welcome to the district operations overview. Here's what's happening across the current.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 className="font-headline text-3xl font-bold text-white tracking-tight">Mission Control</h1>
+          <p className="text-slate-400 text-sm font-body mt-1">
+            Welcome to the district operations overview. Here's what's happening across the current.
+          </p>
+        </div>
+        <Link
+          href="/portal/activities/report"
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-electric-blue text-navy-deep font-bold text-xs uppercase tracking-wider hover:bg-ocean-glow hover:scale-105 transition-all"
+        >
+          Report a Project
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
 
       {/* KPIs Grid */}

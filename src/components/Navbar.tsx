@@ -89,17 +89,16 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Right Action: Login */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Right Action: Login — always visible, including mobile */}
+        <div className="flex items-center gap-2 md:gap-4">
           <Link
             href="/login"
-            className="group relative inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-xs font-semibold tracking-wider uppercase text-white overflow-hidden glass-panel border border-electric-blue/20 hover:border-electric-blue/50 transition-all duration-300"
+            className="group relative inline-flex items-center gap-1.5 px-4 md:px-6 py-2 md:py-2.5 rounded-full text-[11px] md:text-xs font-semibold tracking-wider uppercase text-white overflow-hidden glass-panel border border-electric-blue/20 hover:border-electric-blue/50 transition-all duration-300"
           >
             <span className="absolute inset-0 bg-gradient-to-r from-electric-blue/10 to-ocean-glow/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
             Login
             <ArrowRight className="w-3.5 h-3.5 text-ocean-glow group-hover:translate-x-1 transition-transform" />
           </Link>
-        </div>
 
         {/* Mobile Hamburger Menu Toggle */}
         <button
@@ -109,6 +108,7 @@ export default function Navbar() {
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
+        </div>
       </div>
 
       {/* Mobile Drawer menu */}
@@ -131,8 +131,15 @@ export default function Navbar() {
               );
             })}
             <Link
+              href="/portal/activities/report"
+              className="mt-8 flex items-center justify-between px-6 py-4 rounded-xl bg-electric-blue text-navy-deep font-bold text-lg"
+            >
+              <span>Report a Project</span>
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
               href="/login"
-              className="mt-8 flex items-center justify-between px-6 py-4 rounded-xl bg-gradient-to-r from-electric-blue/15 to-ocean-glow/10 border border-electric-blue/30 text-white font-semibold text-lg"
+              className="flex items-center justify-between px-6 py-4 rounded-xl bg-gradient-to-r from-electric-blue/15 to-ocean-glow/10 border border-electric-blue/30 text-white font-semibold text-lg"
             >
               <span>Login Portal</span>
               <ArrowRight className="w-5 h-5 text-electric-blue" />

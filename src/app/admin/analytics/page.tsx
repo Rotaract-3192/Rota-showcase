@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { TrendingUp, Users, Building } from "lucide-react";
 import { useStore } from "@/store/useStore";
+import { isDummyZone } from "@/lib/zones";
 
 const COLORS = ["#00f0ff", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#ef4444", "#14b8a6"];
 
@@ -30,6 +31,7 @@ export default function AdminAnalyticsPage() {
     
     clubs.forEach(club => {
       const z = club.zone || "Unknown";
+      if (isDummyZone(z)) return;
       if (!zoneMap.has(z)) {
         zoneMap.set(z, { name: z, clubs: 0, projects: 0, members: 0 });
       }

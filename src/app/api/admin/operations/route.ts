@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
       .from("installations")
       .select(`
         id,
+        name,
         date,
         venue,
         chief_guest,

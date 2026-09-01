@@ -99,7 +99,7 @@ export async function GET() {
         totalBeneficiaries,
         volunteerHours,
         contributions,
-        activeClubs: 85 // Fixed at 85 per requirements
+        activeClubs: clubCount || 0
       },
       trendData,
       avenueData,

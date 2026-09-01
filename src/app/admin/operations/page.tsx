@@ -265,6 +265,7 @@ export default function AdminOperationsPage() {
 
                     {activeTab === "installations" && (
                       <>
+                        <th className="px-5 py-3 text-[10px] font-metadata font-bold text-slate-400 uppercase tracking-wider">Installation</th>
                         <th className="px-5 py-3 text-[10px] font-metadata font-bold text-slate-400 uppercase tracking-wider">Incoming President</th>
                         <th className="px-5 py-3 text-[10px] font-metadata font-bold text-slate-400 uppercase tracking-wider">Venue / Guest</th>
                       </>
@@ -304,6 +305,7 @@ export default function AdminOperationsPage() {
 
                       {activeTab === "installations" && (
                         <>
+                          <td className="px-5 py-3 text-xs text-white font-bold">{item.name || "Untitled Installation"}</td>
                           <td className="px-5 py-3 text-xs text-slate-300">
                             {item.incoming_president 
                               ? `${item.incoming_president.first_name} ${item.incoming_president.last_name}`
@@ -446,6 +448,10 @@ export default function AdminOperationsPage() {
               {selectedItem.type === "installations" && (
                 <div className="flex flex-col gap-4">
                   <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-[10px] font-metadata font-bold text-slate-500 uppercase block">Installation Name</span>
+                      <span className="text-xs text-white">{selectedItem.data.name || "N/A"}</span>
+                    </div>
                     <div>
                       <span className="text-[10px] font-metadata font-bold text-slate-500 uppercase block">Incoming President</span>
                       <span className="text-xs text-white">

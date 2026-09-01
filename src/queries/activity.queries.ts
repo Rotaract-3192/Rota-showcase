@@ -19,6 +19,7 @@ async function fetchActivities(options: QueryOptions = {}) {
   }
   if (options.search?.query) params.set('search', options.search.query);
   if (options.filters?.club_id) params.set('club_id', String(options.filters.club_id));
+  params.set('mine', '1');
 
   const res = await fetch(`/api/activities?${params.toString()}`);
   if (!res.ok) {
@@ -28,7 +29,7 @@ async function fetchActivities(options: QueryOptions = {}) {
 }
 
 async function fetchActivity(id: string) {
-  const res = await fetch(`/api/activities?id=${encodeURIComponent(id)}`);
+  const res = await fetch(`/api/activities?id=${encodeURIComponent(id)}&mine=1`);
   if (!res.ok) {
     throw new Error('Failed to fetch activity');
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,6 +64,7 @@ export default function ReportActivityPage() {
   const { data: activityToEdit, isLoading: isLoadingActivity } = useActivity(editId || "");
   
   const [currentStep, setCurrentStep] = useState(1);
+  const currentStepRef = useRef(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [uploadedUrls, setUploadedUrls] = useState<{
@@ -184,16 +185,26 @@ export default function ReportActivityPage() {
     if (currentStep === 3) isValid = await trigger(["avenues", "focusAreas"]);
     if (currentStep === 4) isValid = await trigger(["participants", "beneficiaries", "volunteers", "hoursPerVolunteer"]);
     
-    if (isValid || currentStep === 5) {
-      if (currentStep < 5) setCurrentStep(prev => prev + 1);
+    if (isValid && currentStep < 5) {
+      const next = currentStep + 1;
+      currentStepRef.current = next;
+      setCurrentStep(next);
     }
   };
 
   const prevStep = () => {
-    if (currentStep > 1) setCurrentStep(prev => prev - 1);
+    if (currentStep > 1) {
+      const prev = currentStep - 1;
+      currentStepRef.current = prev;
+      setCurrentStep(prev);
+    }
   };
 
   const onSubmit = async (data: ReportFormValues) => {
+    if (currentStepRef.current !== 5) {
+      return;
+    }
+
     if (!club?.id) {
       setErrorMsg("You must be assigned to a Club to report an activity. Please update your profile or contact district support.");
       return;
@@ -320,11 +331,17 @@ export default function ReportActivityPage() {
 
       {/* Form Container */}
       <form 
-        onSubmit={handleSubmit(onSubmit, onInvalid)} 
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && currentStep < 5) {
+        onSubmit={(e) => {
+          if (currentStepRef.current !== 5) {
             e.preventDefault();
-            nextStep(); // auto-advance to next step on Enter if desired, or just prevent
+            return;
+          }
+          handleSubmit(onSubmit, onInvalid)(e);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && currentStepRef.current < 5) {
+            e.preventDefault();
+            nextStep();
           }
         }}
         className="bg-navy-dark/40 border border-slate-800/60 p-6 md:p-8 rounded-2xl flex flex-col gap-6"
@@ -598,8 +615,9 @@ export default function ReportActivityPage() {
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
                 disabled={isPending}
+                onClick={() => handleSubmit(onSubmit, onInvalid)()}
                 className="px-8 py-2.5 rounded-lg bg-gradient-to-r from-electric-blue to-ocean-glow text-navy-deep hover:opacity-90 transition-opacity text-sm font-bold flex items-center gap-2 disabled:opacity-55 disabled:cursor-not-allowed"
               >
                 {isPending ? (
