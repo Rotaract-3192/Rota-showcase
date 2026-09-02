@@ -1,5 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { emailsForProfileLink } from "@/lib/clerk-emails";
 import { isDistrictRole } from "@/lib/member-sync";
 
 export class AuthzError extends Error {
@@ -26,9 +27,9 @@ export async function getPortalActor(): Promise<PortalActor | null> {
 
   const supabase = await createServerSupabaseClient();
   const user = await currentUser();
-  const emails = (user?.emailAddresses || [])
-    .map((e) => e.emailAddress)
-    .filter(Boolean);
+  const emails = emailsForProfileLink(
+    (user?.emailAddresses || []).map((e) => e.emailAddress).filter(Boolean)
+  );
 
   let profile: { id: string; club_id: string | null } | null = null;
 
@@ -42,10 +43,11 @@ export async function getPortalActor(): Promise<PortalActor | null> {
   profile = byAuthRows?.[0] || null;
 
   if (!profile && emails.length > 0) {
+    const emailFilter = emails.map((e) => `email.ilike.${e}`).join(",");
     const { data: byEmailRows } = await supabase
       .from("member_profiles")
       .select("id, club_id, auth_id")
-      .ilike("email", emails[0])
+      .or(emailFilter)
       .is("deleted_at", null)
       .limit(5);
 

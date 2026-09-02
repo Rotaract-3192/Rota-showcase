@@ -1,4 +1,5 @@
 import { generateSupabaseJWT } from "@/lib/jwt";
+import { emailsForProfileLink } from "@/lib/clerk-emails";
 
 const FETCH_TIMEOUT_MS = 12000;
 
@@ -47,7 +48,7 @@ export async function linkAndLoadMemberProfile(
   emails: string[]
 ): Promise<MemberProfileRow | null> {
   const { supabaseUrl, headers } = await getBearer();
-  const uniqueEmails = [...new Set(emails.map((e) => e.trim()).filter(Boolean))];
+  const uniqueEmails = emailsForProfileLink(emails);
 
   const byAuth = await restFetch(
     `${supabaseUrl}/rest/v1/member_profiles?auth_id=eq.${encodeURIComponent(userId)}&select=id,auth_id,first_name,last_name,email,club_id&deleted_at=is.null`,

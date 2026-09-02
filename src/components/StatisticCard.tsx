@@ -28,47 +28,53 @@ export default function StatisticCard({
 }: StatisticCardProps) {
   const [count, setCount] = useState(0);
   const elementRef = useRef<HTMLDivElement>(null);
-  const hasAnimatedRef = useRef(false);
 
   useEffect(() => {
+    const el = elementRef.current;
+    if (!el) return;
+
+    let cancelled = false;
+    let raf = 0;
+    let started = false;
+
+    const animateTo = (target: number) => {
+      if (started) return;
+      started = true;
+      let startTime: number | null = null;
+
+      const tick = (timestamp: number) => {
+        if (cancelled) return;
+        if (!startTime) startTime = timestamp;
+        const percentage = Math.min((timestamp - startTime) / duration, 1);
+        const easeProgress = percentage * (2 - percentage);
+        setCount(Math.floor(easeProgress * target));
+
+        if (percentage < 1) {
+          raf = requestAnimationFrame(tick);
+        } else {
+          setCount(target);
+        }
+      };
+
+      raf = requestAnimationFrame(tick);
+    };
+
     const observer = new IntersectionObserver(
       (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && !hasAnimatedRef.current) {
-          hasAnimatedRef.current = true;
-          let startTime: number | null = null;
-
-          const animate = (timestamp: number) => {
-            if (!startTime) startTime = timestamp;
-            const progress = timestamp - startTime;
-            const percentage = Math.min(progress / duration, 1);
-            
-            // Ease out quad formula
-            const easeProgress = percentage * (2 - percentage);
-            
-            setCount(Math.floor(easeProgress * value));
-
-            if (percentage < 1) {
-              requestAnimationFrame(animate);
-            } else {
-              setCount(value);
-            }
-          };
-
-          requestAnimationFrame(animate);
+        if (entries[0]?.isIntersecting) {
+          observer.disconnect();
+          animateTo(value);
         }
       },
       { threshold: 0.1 }
     );
 
-    if (elementRef.current) {
-      observer.observe(elementRef.current);
-    }
+    observer.observe(el);
 
     return () => {
-      if (elementRef.current) {
-        observer.unobserve(elementRef.current);
-      }
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      observer.disconnect();
     };
   }, [value, duration]);
 
