@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
-import { clerkClient, auth } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
+import { publicSignInUrl } from '@/lib/app-url';
+import { jsonAuthzError, requireAdminActor } from '@/lib/portal-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -31,15 +33,8 @@ async function supabaseFetch(path: string, options: RequestInit = {}) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    let actorId = null;
-
-    if (userId) {
-      const adminProfiles = await supabaseFetch(`/member_profiles?auth_id=eq.${userId}&select=id`);
-      if (adminProfiles && adminProfiles.length > 0) {
-        actorId = adminProfiles[0].id;
-      }
-    }
+    const actor = await requireAdminActor();
+    const actorId = actor.profileId;
 
     const { name, email, phone, clubId, role } = await req.json();
 
@@ -52,7 +47,7 @@ export async function POST(req: NextRequest) {
     const client = await clerkClient();
     await client.invitations.createInvitation({
       emailAddress: email,
-      redirectUrl: `${req.nextUrl.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/sign-in`,
+      redirectUrl: publicSignInUrl(req),
       ignoreExisting: true
     });
 
@@ -113,6 +108,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    const authz = jsonAuthzError(err);
+    if (authz) return NextResponse.json(authz.body, { status: authz.status });
     console.error('POST /api/admin/users/invite error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

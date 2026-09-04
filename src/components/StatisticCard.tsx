@@ -71,6 +71,13 @@ export default function StatisticCard({
 
     observer.observe(el);
 
+    const rect = el.getBoundingClientRect();
+    const alreadyVisible = rect.top < window.innerHeight && rect.bottom > 0;
+    if (alreadyVisible) {
+      observer.disconnect();
+      animateTo(value);
+    }
+
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);

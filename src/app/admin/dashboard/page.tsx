@@ -26,13 +26,13 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar
-} from "recharts";
+import { describeAuditAction } from "@/lib/audit-log";
 
 export default function AdminDashboardPage() {
   const { profileData } = useAuthContext();
   const zrrRole = profileData?.roles.find(r => r.role === 'ZRR');
   const isSuperAdmin = profileData?.roles.some(r => 
-    ["District Admin", "District Core Team", "Super Admin", "Admin"].includes(r.role)
+    ["District Admin", "District Core Team", "Super Admin", "Admin", "Administrator"].includes(r.role)
   );
   const userZone = zrrRole?.zone;
 

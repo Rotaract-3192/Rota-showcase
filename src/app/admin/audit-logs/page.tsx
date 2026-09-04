@@ -4,11 +4,12 @@ import React, { useState, useEffect } from "react";
 import GlassPanel from "@/components/GlassPanel";
 import { ClipboardList, Terminal, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { auditActorName, describeAuditAction } from "@/lib/audit-log";
 
 export default function AdminAuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchLogs() {
@@ -23,25 +24,14 @@ export default function AdminAuditLogsPage() {
         
         if (data) {
           const mapped = data.map((log: any) => {
-            const actorName = log.member_profiles 
-              ? `${log.member_profiles.first_name} ${log.member_profiles.last_name}`
-              : "System/Automation";
+            const actorName = auditActorName(log.member_profiles);
+            let userActionDesc = describeAuditAction(log);
             
-            // Map actions or details into user-friendly description
-            let userActionDesc = `Performed ${log.action} on ${log.table_name}`;
-            if (log.action === "APPROVE_ACCESS" && log.new_data) {
-              const nd = typeof log.new_data === "string" ? JSON.parse(log.new_data) : log.new_data;
-              userActionDesc = `Approved access request for ${nd.user_email} as ${nd.role}`;
-            } else if (log.action === "REJECT_ACCESS" && log.new_data) {
-              const nd = typeof log.new_data === "string" ? JSON.parse(log.new_data) : log.new_data;
-              userActionDesc = `Rejected access request for ${nd.user_email}`;
-            }
-            
-            // Severity mapping based on action type
             let severity: "Info" | "Warning" | "Critical" = "Info";
-            if (log.action.includes("DELETE") || log.action.includes("REJECT")) {
+            const action = String(log.action || "").toUpperCase();
+            if (action.includes("DELETE") || action.includes("REJECT")) {
               severity = "Warning";
-            } else if (log.action.includes("ERROR") || log.action.includes("CRITICAL")) {
+            } else if (action.includes("ERROR") || action.includes("CRITICAL")) {
               severity = "Critical";
             }
 
@@ -56,8 +46,9 @@ export default function AdminAuditLogsPage() {
           });
           setLogs(mapped);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch audit logs:", err);
+        setError(err?.message || "Failed to load audit logs");
       } finally {
         setLoading(false);
       }
@@ -88,6 +79,15 @@ export default function AdminAuditLogsPage() {
         </div>
 
         <div className="flex flex-col divide-y divide-slate-800/40 font-mono text-[11px] leading-relaxed">
+          {loading && (
+            <div className="p-8 text-center text-slate-500 text-xs">Loading audit logs...</div>
+          )}
+          {!loading && error && (
+            <div className="p-8 text-center text-rose-400 text-xs">{error}</div>
+          )}
+          {!loading && !error && logs.length === 0 && (
+            <div className="p-8 text-center text-slate-500 text-xs">No audit events found.</div>
+          )}
           {logs.map((log) => (
             <div key={log.id} className="p-4 hover:bg-slate-800/10 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">

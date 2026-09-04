@@ -42,19 +42,19 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-screen w-64 bg-navy-deep/95 backdrop-blur-xl border-r border-slate-800/60 flex flex-col z-40 hidden md:flex transition-all">
       {/* Brand Header */}
       <div className="h-20 flex items-center px-6 border-b border-slate-800/60">
-        <div className="flex items-center gap-3">
+        <Link href="/portal/dashboard" className="flex items-center gap-3 group">
           <div className="w-12 h-12 rounded-lg flex items-center justify-center">
             <img src="/logo.png" alt="Unleash Exuberance Logo" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h2 className="font-headline font-bold text-white tracking-wide text-sm">
+            <h2 className="font-headline font-bold text-white tracking-wide text-sm group-hover:text-electric-blue transition-colors">
               DISTRICT 3192
             </h2>
             <p className="font-metadata text-[10px] text-ocean-glow uppercase tracking-wider font-bold">
               Command Center
             </p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Main Navigation */}

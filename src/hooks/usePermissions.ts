@@ -1,4 +1,5 @@
 import { useAuthContext } from '@/components/providers/auth-provider';
+import { isDistrictRole } from '@/lib/member-sync';
 
 /**
  * Hook for granular permission checking based on user roles.
@@ -11,7 +12,7 @@ export function usePermissions() {
 
   // Base role checks
   const isSuperAdmin = roleNames.includes('Super Admin');
-  const isDistrict = roleNames.includes('District') || isSuperAdmin;
+  const isDistrict = roleNames.some(isDistrictRole) || isSuperAdmin;
   const isPresident = roleNames.includes('President') || isDistrict;
   const isBoardMember = roleNames.some(r => r.includes('Board')) || isPresident;
   const isClubMember = !!profileData?.profile?.club_id;

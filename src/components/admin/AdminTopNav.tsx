@@ -2,7 +2,8 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Search, Bell, Command, ChevronRight, Menu } from "lucide-react";
+import { Search, Bell, Command, ChevronRight, Menu, LayoutDashboard } from "lucide-react";
+import Link from "next/link";
 import NotificationDropdown from "./NotificationDropdown";
 
 interface AdminTopNavProps {
@@ -26,6 +27,14 @@ export default function AdminTopNav({ onMenuClick }: AdminTopNavProps) {
         >
           <Menu className="w-4 h-4" />
         </button>
+
+        <Link
+          href="/admin/dashboard"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-electric-blue text-navy-deep text-[10px] font-bold uppercase tracking-wider hover:bg-ocean-glow transition-colors"
+        >
+          <LayoutDashboard className="w-3.5 h-3.5" />
+          Dashboard
+        </Link>
 
         {/* Breadcrumbs */}
         <div className="hidden sm:flex items-center text-xs font-metadata text-slate-500 gap-2">

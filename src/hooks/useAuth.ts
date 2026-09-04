@@ -13,6 +13,10 @@ export function useAuth() {
     switch (primaryRole) {
       case 'Super Admin':
       case 'District':
+      case 'District Admin':
+      case 'District Core Team':
+      case 'Admin':
+      case 'Administrator':
       case 'ZRR':
         return '/admin/dashboard';
       case 'President':

@@ -10,7 +10,10 @@ type MemberProfileRow = {
   last_name: string | null;
   email: string | null;
   club_id: string | null;
+  member_roles?: { role: string }[] | null;
 };
+
+const PROFILE_SELECT = "id,auth_id,first_name,last_name,email,club_id";
 
 function restHeaders(bearerToken: string, apiKey: string) {
   return {
@@ -51,12 +54,12 @@ export async function linkAndLoadMemberProfile(
   const uniqueEmails = emailsForProfileLink(emails);
 
   const byAuth = await restFetch(
-    `${supabaseUrl}/rest/v1/member_profiles?auth_id=eq.${encodeURIComponent(userId)}&select=id,auth_id,first_name,last_name,email,club_id&deleted_at=is.null`,
+    `${supabaseUrl}/rest/v1/member_profiles?auth_id=eq.${encodeURIComponent(userId)}&select=${PROFILE_SELECT}&deleted_at=is.null`,
     { headers }
   );
 
   if (byAuth.ok) {
-    const rows = (await byAuth.json()) as MemberProfileRow[];
+    const rows = await attachRoles((await byAuth.json()) as MemberProfileRow[]);
     const best = pickBestProfile(rows);
     if (best) return best;
   }
@@ -64,7 +67,7 @@ export async function linkAndLoadMemberProfile(
   const matches: MemberProfileRow[] = [];
   for (const email of uniqueEmails) {
     const res = await restFetch(
-      `${supabaseUrl}/rest/v1/member_profiles?email=ilike.${encodeURIComponent(email)}&select=id,auth_id,first_name,last_name,email,club_id&deleted_at=is.null`,
+      `${supabaseUrl}/rest/v1/member_profiles?email=ilike.${encodeURIComponent(email)}&select=${PROFILE_SELECT}&deleted_at=is.null`,
       { headers }
     );
     if (!res.ok) continue;
@@ -72,7 +75,7 @@ export async function linkAndLoadMemberProfile(
     matches.push(...rows);
   }
 
-  const profile = pickBestProfile(matches);
+  const profile = pickBestProfile(await attachRoles(matches));
   if (!profile) return null;
 
   if (profile.auth_id !== userId) {
@@ -108,15 +111,37 @@ export async function fetchMemberRoles(memberId: string): Promise<string[]> {
   return Array.isArray(roles) ? roles.map((r: { role: string }) => r.role) : [];
 }
 
+async function attachRoles(rows: MemberProfileRow[]): Promise<MemberProfileRow[]> {
+  if (!rows.length) return [];
+  const { supabaseUrl, headers } = await getBearer();
+  const ids = [...new Set(rows.map((r) => r.id))];
+  const res = await restFetch(
+    `${supabaseUrl}/rest/v1/member_roles?member_id=in.(${ids.join(",")})&select=member_id,role&deleted_at=is.null`,
+    { headers }
+  );
+  const byMember = new Map<string, { role: string }[]>();
+  if (res.ok) {
+    const roleRows = (await res.json()) as { member_id: string; role: string }[];
+    for (const row of roleRows) {
+      const list = byMember.get(row.member_id) || [];
+      list.push({ role: row.role });
+      byMember.set(row.member_id, list);
+    }
+  }
+  return rows.map((row) => ({ ...row, member_roles: byMember.get(row.id) || [] }));
+}
+
 export function isDistrictRole(role: string): boolean {
+  const normalized = role.trim().toLowerCase();
   return [
-    "District Admin",
-    "District Core Team",
-    "Super Admin",
-    "Admin",
-    "ZRR",
-    "District",
-  ].includes(role);
+    "district admin",
+    "district core team",
+    "super admin",
+    "admin",
+    "administrator",
+    "zrr",
+    "district",
+  ].includes(normalized);
 }
 
 function pickBestProfile(rows: MemberProfileRow[]): MemberProfileRow | null {
@@ -124,5 +149,9 @@ function pickBestProfile(rows: MemberProfileRow[]): MemberProfileRow | null {
   const unique = new Map<string, MemberProfileRow>();
   for (const row of rows) unique.set(row.id, row);
   const list = [...unique.values()];
+  const district = list.find((r) =>
+    (r.member_roles || []).some((roleRow) => isDistrictRole(roleRow.role))
+  );
+  if (district) return district;
   return list.find((r) => r.club_id) || list[0];
 }
