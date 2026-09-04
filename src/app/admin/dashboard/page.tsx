@@ -26,7 +26,7 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar
-import { describeAuditAction } from "@/lib/audit-log";
+} from "recharts";
 
 export default function AdminDashboardPage() {
   const { profileData } = useAuthContext();
