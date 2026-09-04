@@ -20,7 +20,12 @@ const reportSchema = z.object({
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
   sameAsStart: z.boolean().optional(),
-  activityType: z.enum(["Standalone", "Joint", "Participatory Project with Sponsor Club"]),
+  activityType: z.enum([
+    "Standalone",
+    "Joint",
+    "Participatory Project",
+    "Project with Sponsor Club",
+  ]),
   externalNGO: z.boolean().optional(),
   organizationName: z.string().optional(),
   avenues: z.array(z.string()).min(1, "Select at least one avenue."),
@@ -37,6 +42,27 @@ const reportSchema = z.object({
 });
 
 type ReportFormValues = z.infer<typeof reportSchema>;
+
+const ACTIVITY_TYPES = [
+  { value: "Standalone", label: "Standalone Activity" },
+  { value: "Joint", label: "Joint Activity" },
+  { value: "Participatory Project", label: "Participatory Project" },
+  { value: "Project with Sponsor Club", label: "Project with Sponsor Club" },
+] as const;
+
+function normalizeActivityType(value: string | null | undefined): ReportFormValues["activityType"] {
+  if (value === "Joint" || value === "Standalone" || value === "Participatory Project" || value === "Project with Sponsor Club") {
+    return value;
+  }
+  if (value === "Participatory Project with Sponsor Club") {
+    return "Participatory Project";
+  }
+  return "Standalone";
+}
+
+function activityKind(activityType: ReportFormValues["activityType"]): "PROJECT" | "EVENT" {
+  return activityType === "Joint" ? "EVENT" : "PROJECT";
+}
 
 const avenuesList = [
   "Club Service", "Community Service", "Professional Development",
@@ -114,7 +140,7 @@ export default function ReportActivityPage() {
         startDate: activityToEdit.start_time ? new Date(activityToEdit.start_time).toISOString().split('T')[0] : "",
         endDate: activityToEdit.end_time ? new Date(activityToEdit.end_time).toISOString().split('T')[0] : "",
         sameAsStart: activityToEdit.start_time === activityToEdit.end_time,
-        activityType: activityToEdit.activity_category as any || "Standalone",
+        activityType: normalizeActivityType(activityToEdit.activity_category),
         externalNGO: activityToEdit.is_external_ngo || false,
         organizationName: activityToEdit.organization_name || "",
         avenues: activityToEdit.avenues || [],
@@ -225,7 +251,7 @@ export default function ReportActivityPage() {
         club_id: club.id,
         title: data.title,
         slug: slug,
-        type: (data.activityType === "Standalone" || data.activityType === "Participatory Project with Sponsor Club") ? "PROJECT" : "EVENT",
+        type: activityKind(data.activityType),
         description: data.description,
         status: "DRAFT",
         activity_category: data.activityType,
@@ -422,18 +448,12 @@ export default function ReportActivityPage() {
             <div className="flex flex-col gap-3">
               <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Activity Type *</label>
               <div className="flex items-center gap-6 flex-wrap">
-                <label className="flex items-center gap-2 text-sm text-slate-200">
-                  <input type="radio" value="Standalone" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
-                  Standalone Activity
-                </label>
-                <label className="flex items-center gap-2 text-sm text-slate-200">
-                  <input type="radio" value="Joint" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
-                  Joint Activity
-                </label>
-                <label className="flex items-center gap-2 text-sm text-slate-200">
-                  <input type="radio" value="Participatory Project with Sponsor Club" {...register("activityType")} className="accent-electric-blue w-4 h-4" />
-                  Participatory Project with Sponsor Club
-                </label>
+                {ACTIVITY_TYPES.map((option) => (
+                  <label key={option.value} className="flex items-center gap-2 text-sm text-slate-200">
+                    <input type="radio" value={option.value} {...register("activityType")} className="accent-electric-blue w-4 h-4" />
+                    {option.label}
+                  </label>
+                ))}
               </div>
             </div>
 
