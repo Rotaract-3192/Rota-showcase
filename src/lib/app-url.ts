@@ -36,3 +36,14 @@ export function publicAppOrigin(req?: { nextUrl?: { origin: string }; headers?: 
 export function publicSignInUrl(req?: { nextUrl?: { origin: string }; headers?: Headers }) {
   return `${publicAppOrigin(req)}/sign-in`;
 }
+
+/**
+ * Clerk invitation emails embed this URL in the ticket JWT.
+ * Never derive it from the incoming request — Docker binds 0.0.0.0:3000.
+ */
+export function clerkInviteRedirectUrl() {
+  const fromEnv =
+    originFromValue(process.env.APP_URL) ||
+    originFromValue(process.env.NEXT_PUBLIC_APP_URL);
+  return `${fromEnv || FALLBACK_ORIGIN}/sign-in`;
+}

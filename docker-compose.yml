@@ -18,7 +18,7 @@ services:
       - "3000"
 
     environment:
-      APP_URL: ${APP_URL:-https://reporting.rotaract3192.org}
+      APP_URL: https://reporting.rotaract3192.org
     env_file:
       - /opt/config/reporting.env
       - .env

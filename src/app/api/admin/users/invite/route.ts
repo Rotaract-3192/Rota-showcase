@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
 import { clerkClient } from '@clerk/nextjs/server';
-import { publicSignInUrl } from '@/lib/app-url';
+import { clerkInviteRedirectUrl } from '@/lib/app-url';
 import { jsonAuthzError, requireAdminActor } from '@/lib/portal-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     const client = await clerkClient();
     await client.invitations.createInvitation({
       emailAddress: email,
-      redirectUrl: publicSignInUrl(req),
+      redirectUrl: clerkInviteRedirectUrl(),
       ignoreExisting: true
     });
 
