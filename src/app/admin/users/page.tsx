@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import AdminDataTable from "@/components/admin/AdminDataTable";
 import { UserCircle, Shield, Mail, Loader2, Settings2, MoreHorizontal, Eye, Edit2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DISTRICT_ZONES } from "@/lib/zones";
 import { apiUrl } from "@/lib/api";
 
 interface User {
@@ -31,7 +32,8 @@ export default function AdminUsersPage() {
     email: "",
     phone: "",
     clubId: "",
-    role: "President"
+    role: "President",
+    zone: ""
   });
   const [inviting, setInviting] = useState(false);
 
@@ -99,6 +101,10 @@ export default function AdminUsersPage() {
       alert("Name, email, and role are required.");
       return;
     }
+    if (inviteForm.role === "ZRR" && !inviteForm.zone) {
+      alert("Select a zone for this ZRR.");
+      return;
+    }
     setInviting(true);
     try {
       const res = await fetch(apiUrl('/api/admin/users/invite'), {
@@ -117,7 +123,8 @@ export default function AdminUsersPage() {
         email: "",
         phone: "",
         clubId: "",
-        role: "President"
+        role: "President",
+        zone: ""
       });
       await fetchUsers();
     } catch (err: any) {
@@ -438,6 +445,23 @@ export default function AdminUsersPage() {
                   <option value="Super Admin" className="bg-navy-deep text-white">Super Admin</option>
                 </select>
               </div>
+
+              {inviteForm.role === "ZRR" && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">ZRR Zone</label>
+                  <select
+                    required
+                    value={inviteForm.zone}
+                    onChange={(e) => setInviteForm({ ...inviteForm, zone: e.target.value })}
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 font-body appearance-none cursor-pointer font-bold"
+                  >
+                    <option value="" className="bg-navy-deep text-slate-400">Select a zone...</option>
+                    {DISTRICT_ZONES.map((zone) => (
+                      <option key={zone} value={zone} className="bg-navy-deep text-white">{zone}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <button 
                 type="submit"

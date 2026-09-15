@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useStore } from "@/store/useStore";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { useProfile } from "@/hooks/useProfile";
 import {
   Layers,
   Users,
@@ -54,6 +53,8 @@ const KpiCard = ({ title, value, icon: Icon }: any) => (
 );
 
 export default function DashboardPage() {
+  const { club, primaryRole } = useProfile();
+  const [scopeLabel, setScopeLabel] = useState<string>("");
   const [stats, setStats] = useState({
     totalProjects: 0,
     totalVolunteers: 0,
@@ -97,6 +98,12 @@ export default function DashboardPage() {
           if (data.trendData) setTrendData(data.trendData);
           if (data.avenueData) setAvenueData(data.avenueData);
           if (data.insights) setInsights(data.insights);
+          if (data.context) {
+            const clubName = data.context.clubName || club?.name;
+            const zone = data.context.zone || club?.zone;
+            const parts = [clubName, zone].filter(Boolean);
+            setScopeLabel(parts.join(" · "));
+          }
         }
       } catch (err) {
         console.error("Error loading dashboard statistics:", err);
@@ -133,7 +140,8 @@ export default function DashboardPage() {
         <div>
           <h1 className="font-headline text-3xl font-bold text-white tracking-tight">Mission Control</h1>
           <p className="text-slate-400 text-sm font-body mt-1">
-            Welcome to the district operations overview. Here's what's happening across the current.
+            Welcome to {scopeLabel || club?.name || "your club workspace"}. Here's what's happening
+            {primaryRole ? ` for ${primaryRole}` : ""}.
           </p>
         </div>
         <Link
@@ -162,7 +170,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 bg-navy-dark/40 border border-slate-800/60 p-6 rounded-2xl flex flex-col">
           <div className="mb-6">
             <h3 className="text-sm font-bold text-white">Club Activity Trend</h3>
-            <p className="text-xs text-slate-400 font-metadata">Monthly project submissions across all zones</p>
+            <p className="text-xs text-slate-400 font-metadata">Monthly project submissions for your club / zone</p>
           </div>
           <div className="flex-1 min-h-[300px]">
             {trendData.length > 0 ? (

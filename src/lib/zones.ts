@@ -1,4 +1,4 @@
-export const REAL_ZONES = [
+export const DISTRICT_ZONES = [
   "Arnava",
   "Pravaha",
   "Taranga",
@@ -7,21 +7,58 @@ export const REAL_ZONES = [
   "Samudhra",
 ] as const;
 
-const DUMMY_ZONE_NAMES = new Set([
-  "zone 1",
-  "zone 2",
-  "zone1",
-  "zone2",
-  "1",
-  "2",
-]);
+export type DistrictZone = (typeof DISTRICT_ZONES)[number];
 
-export function isDummyZone(zone: string | null | undefined): boolean {
-  if (!zone) return false;
-  return DUMMY_ZONE_NAMES.has(zone.trim().toLowerCase());
+const ZONE_ALIASES: Record<string, DistrictZone> = {
+  arnava: "Arnava",
+  pravaha: "Pravaha",
+  taranga: "Taranga",
+  varuna: "Varuna",
+  sagara: "Sagara",
+  samudhra: "Samudhra",
+  "1": "Arnava",
+  "zone 1": "Arnava",
+  zone1: "Arnava",
+  "2": "Pravaha",
+  "zone 2": "Pravaha",
+  zone2: "Pravaha",
+  "3": "Taranga",
+  "zone 3": "Taranga",
+  zone3: "Taranga",
+  "4": "Varuna",
+  "zone 4": "Varuna",
+  zone4: "Varuna",
+  "5": "Sagara",
+  "zone 5": "Sagara",
+  zone5: "Sagara",
+  "6": "Samudhra",
+  "zone 6": "Samudhra",
+  zone6: "Samudhra",
+};
+
+export function canonicalizeZone(value: string | null | undefined): DistrictZone | null {
+  if (!value) return null;
+  const key = value.trim().toLowerCase();
+  if (!key || key === "all" || key === "unassigned" || key === "unknown") return null;
+  return ZONE_ALIASES[key] || DISTRICT_ZONES.find((zone) => zone.toLowerCase() === key) || null;
 }
 
-export function isRealZone(zone: string | null | undefined): boolean {
-  if (!zone) return false;
-  return REAL_ZONES.some((z) => z.toLowerCase() === zone.trim().toLowerCase());
+export function isDistrictWideAdminRole(role: string): boolean {
+  const normalized = role.trim().toLowerCase();
+  return [
+    "district admin",
+    "district core team",
+    "super admin",
+    "admin",
+    "administrator",
+    "district",
+  ].includes(normalized);
+}
+
+export function isZrrRole(role: string): boolean {
+  return role.trim().toLowerCase() === "zrr";
+}
+
+export function displayZone(value: string | null | undefined): string {
+  return canonicalizeZone(value) || value?.trim() || "Unassigned";
 }

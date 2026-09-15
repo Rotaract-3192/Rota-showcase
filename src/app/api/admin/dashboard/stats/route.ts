@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
-import { currentUser } from '@clerk/nextjs/server';
+import { clubIdsInZone, jsonAuthzError, resolveAdminZoneFilter } from '@/lib/portal-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -31,55 +31,35 @@ async function supabaseFetch(path: string, options: RequestInit = {}) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const email = user.emailAddresses[0]?.emailAddress;
-    if (!email) {
-      return NextResponse.json({ error: "User email not found" }, { status: 400 });
-    }
-
-    // 1. Fetch member profile
-    const profiles = await supabaseFetch(`/member_profiles?email=eq.${encodeURIComponent(email)}&select=id`);
-    if (!profiles || profiles.length === 0) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 403 });
-    }
-    const profileId = profiles[0].id;
-
-    // 2. Fetch roles
-    const roles = await supabaseFetch(`/member_roles?member_id=eq.${profileId}&select=role,zone&deleted_at=is.null`);
-    if (!roles) {
-      return NextResponse.json({ error: "Failed to verify user roles" }, { status: 500 });
-    }
-
-    const zrrRole = roles.find((r: any) => r.role === 'ZRR');
-    const isSuperAdmin = roles.some((r: any) =>
-      ['District Admin', 'District Core Team', 'Super Admin', 'Admin'].includes(r.role)
-    );
-
-    const isAuthorized = isSuperAdmin || !!zrrRole;
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized: Admins only" }, { status: 403 });
-    }
-
     const { searchParams } = new URL(req.url);
-    const selectedZone = searchParams.get('zone');
-    const userZone = zrrRole?.zone;
-    const filterZone = (!isSuperAdmin && userZone) ? userZone : selectedZone;
+    const { filterZone } = await resolveAdminZoneFilter(searchParams.get('zone'));
 
-    // 3. Fetch clubs
+    const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
+
     let clubsPath = '/clubs?select=id,created_at&deleted_at=is.null';
-    if (filterZone && filterZone !== 'All') {
-      clubsPath += `&zone=eq.${encodeURIComponent(filterZone)}`;
+    if (clubIds) {
+      if (clubIds.length === 0) {
+        return NextResponse.json({
+          metrics: {
+            totalClubs: 0,
+            totalProjects: 0,
+            totalVolunteers: 0,
+            totalVolunteerHours: 0,
+            totalBeneficiaries: 0,
+            totalFundsRaised: 0,
+            pendingReviews: 0,
+          },
+          trends: { clubs: '0', projects: '0', volunteers: '0', volunteerHours: '0' },
+          velocityData: [],
+        });
+      }
+      clubsPath += `&id=in.(${clubIds.join(',')})`;
     }
     const clubs = await supabaseFetch(clubsPath) || [];
 
-    // 4. Fetch activities
-    let activitiesPath = '/activities?select=id,status,created_at,start_time,volunteers,volunteer_hours,beneficiaries,activity_expenses,clubs!inner(zone)&deleted_at=is.null';
-    if (filterZone && filterZone !== 'All') {
-      activitiesPath += `&clubs.zone=eq.${encodeURIComponent(filterZone)}`;
+    let activitiesPath = '/activities?select=id,status,created_at,start_time,volunteers,volunteer_hours,beneficiaries,activity_expenses,club_id&deleted_at=is.null';
+    if (clubIds && clubIds.length > 0) {
+      activitiesPath += `&club_id=in.(${clubIds.join(',')})`;
     }
     const activities = await supabaseFetch(activitiesPath) || [];
 
@@ -210,6 +190,8 @@ export async function GET(req: NextRequest) {
       velocityData
     });
   } catch (err: any) {
+    const authz = jsonAuthzError(err);
+    if (authz) return NextResponse.json(authz.body, { status: authz.status });
     console.error('GET /api/admin/dashboard/stats error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

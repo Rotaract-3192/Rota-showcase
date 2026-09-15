@@ -1,57 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { clubIdsInZone, jsonAuthzError, resolveAdminZoneFilter } from "@/lib/portal-auth";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const email = user.emailAddresses[0]?.emailAddress;
-    if (!email) {
-      return NextResponse.json({ error: "User email not found" }, { status: 400 });
-    }
+    const { searchParams } = new URL(req.url);
+    const { filterZone } = await resolveAdminZoneFilter(searchParams.get("zone"));
+    const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
 
     const supabase = await createServerSupabaseClient();
-
-    // Verify Admin Role in Database
-    const { data: profileData, error: profileErr } = await supabase
-      .from("member_profiles")
-      .select("id")
-      .eq("email", email)
-      .single();
-
-    if (profileErr || !profileData) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 403 });
-    }
-
-    const { data: rolesData, error: rolesErr } = await supabase
-      .from("member_roles")
-      .select("role, zone")
-      .eq("member_id", profileData.id)
-      .is("deleted_at", null);
-
-    if (rolesErr || !rolesData) {
-      return NextResponse.json({ error: "Failed to verify user roles" }, { status: 500 });
-    }
-
-    const zrrRole = rolesData.find((r: any) => r.role === "ZRR");
-    const isSuperAdmin = rolesData.some((r: any) =>
-      ["District Admin", "District Core Team", "Super Admin", "Admin"].includes(r.role)
-    );
-
-    const isAuthorized = isSuperAdmin || !!zrrRole;
-
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized: Admins only" }, { status: 403 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const selectedZone = searchParams.get("zone");
-    const userZone = zrrRole?.zone;
-    const filterZone = (!isSuperAdmin && userZone) ? userZone : selectedZone;
 
     // Fetch reports from all 4 tables in parallel
     let meetingsQuery = supabase
@@ -124,11 +81,14 @@ export async function GET(req: NextRequest) {
       .is("deleted_at", null)
       .order("date", { ascending: false });
 
-    if (filterZone && filterZone !== "All") {
-      meetingsQuery = meetingsQuery.eq("clubs.zone", filterZone);
-      orientationsQuery = orientationsQuery.eq("clubs.zone", filterZone);
-      installationsQuery = installationsQuery.eq("clubs.zone", filterZone);
-      dovsQuery = dovsQuery.eq("clubs.zone", filterZone);
+    if (clubIds) {
+      if (clubIds.length === 0) {
+        return NextResponse.json({ meetings: [], orientations: [], installations: [], dovs: [] });
+      }
+      meetingsQuery = meetingsQuery.in("club_id", clubIds);
+      orientationsQuery = orientationsQuery.in("club_id", clubIds);
+      installationsQuery = installationsQuery.in("club_id", clubIds);
+      dovsQuery = dovsQuery.in("club_id", clubIds);
     }
 
     const [meetingsRes, orientationsRes, installationsRes, dovsRes] = await Promise.all([
@@ -150,6 +110,8 @@ export async function GET(req: NextRequest) {
       dovs: dovsRes.data || []
     });
   } catch (err: any) {
+    const authz = jsonAuthzError(err);
+    if (authz) return NextResponse.json(authz.body, { status: authz.status });
     console.error("GET /api/admin/operations error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

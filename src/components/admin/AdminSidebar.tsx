@@ -56,7 +56,9 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ isOpen, onClose, user }: AdminSidebarProps) {
   const pathname = usePathname();
   const { profileData } = useAuthContext();
-  const displayRole = profileData?.primaryRole || "Administrator";
+  const displayRole = [profileData?.primaryRole || "Administrator", profileData?.roles.find((r) => r.role === "ZRR")?.zone]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <aside 

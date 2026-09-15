@@ -6,6 +6,7 @@ import { Clock, CheckCircle2, XCircle, Search, Filter, AlertTriangle, Loader2, F
 import { cn } from "@/lib/utils";
 import { apiUrl } from "@/lib/api";
 import { useAuthContext } from "@/components/providers/auth-provider";
+import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib/zones";
 
 interface Activity {
   id: string;
@@ -31,10 +32,8 @@ interface Activity {
 export default function AdminActivitiesPage() {
   const { profileData } = useAuthContext();
   const zrrRole = profileData?.roles.find(r => r.role === 'ZRR');
-  const isSuperAdmin = profileData?.roles.some(r => 
-    ["District Admin", "District Core Team", "Super Admin", "Admin"].includes(r.role)
-  );
-  const userZone = zrrRole?.zone;
+  const isSuperAdmin = profileData?.roles.some(r => isDistrictWideAdminRole(r.role)) ?? false;
+  const userZone = canonicalizeZone(zrrRole?.zone);
 
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -246,12 +245,9 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
             className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none disabled:opacity-60"
           >
             {isSuperAdmin && <option value="All">All Zones</option>}
-            <option value="Arnava">Arnava</option>
-            <option value="Pravaha">Pravaha</option>
-            <option value="Taranga">Taranga</option>
-            <option value="Varuna">Varuna</option>
-            <option value="Sagara">Sagara</option>
-            <option value="Samudhra">Samudhra</option>
+            {DISTRICT_ZONES.map((zone) => (
+              <option key={zone} value={zone}>{zone}</option>
+            ))}
           </select>
         </div>
       </div>

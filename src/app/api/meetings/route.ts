@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { meetingService } from '@/services/meeting.service';
-import { getPortalActor, assertCanAccessClubRecord, scopedClubId } from '@/lib/portal-auth';
+import { getPortalActor, assertCanAccessClubRecord, scopedClubIds } from '@/lib/portal-auth';
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       const result = await meetingService.getById(id);
       if (!result) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       try {
-        assertCanAccessClubRecord(actor, (result as any).club_id);
+        await assertCanAccessClubRecord(actor, (result as any).club_id);
       } catch {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
       }
@@ -34,12 +34,12 @@ export async function GET(req: NextRequest) {
     if (sortColumn) options.sort = { column: sortColumn, ascending: sortAsc };
     if (search) options.search = { query: search, columns: ['title', 'description', 'name'] };
 
-    const clubId = scopedClubId(actor);
-    if (!actor.isDistrict && !clubId) {
+    const clubIds = await scopedClubIds(actor);
+    if (clubIds && clubIds.length === 0) {
       return NextResponse.json({ data: [], count: 0, page, pageSize, totalPages: 0 });
     }
-    if (clubId) {
-      options.filters = { club_id: clubId };
+    if (clubIds) {
+      options.clubIds = clubIds;
     }
 
     const result = await meetingService.findMany(options);

@@ -56,11 +56,13 @@ export class AuthService {
       let club: Club | null = null;
       let district: District | null = null;
 
-      if (profile.club_id) {
+      const clubId = profile.club_id || (roles || []).find((r) => r.club_id)?.club_id || null;
+
+      if (clubId) {
         const { data: clubData } = await supabase
           .from('clubs')
           .select('*')
-          .eq('id', profile.club_id)
+          .eq('id', clubId)
           .is('deleted_at', null)
           .single();
         club = clubData as Club | null;

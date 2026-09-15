@@ -3,6 +3,7 @@ import { generateSupabaseJWT } from '@/lib/jwt';
 import { clerkClient } from '@clerk/nextjs/server';
 import { clerkInviteRedirectUrl } from '@/lib/app-url';
 import { jsonAuthzError, requireAdminActor } from '@/lib/portal-auth';
+import { canonicalizeZone } from '@/lib/zones';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -36,10 +37,15 @@ export async function POST(req: NextRequest) {
     const actor = await requireAdminActor();
     const actorId = actor.profileId;
 
-    const { name, email, phone, clubId, role } = await req.json();
+    const { name, email, phone, clubId, role, zone } = await req.json();
 
     if (!name || !email || !role) {
       return NextResponse.json({ error: 'Missing required fields (name, email, role)' }, { status: 400 });
+    }
+
+    const assignedZone = String(role).toLowerCase() === 'zrr' ? canonicalizeZone(zone) : null;
+    if (String(role).toLowerCase() === 'zrr' && !assignedZone) {
+      return NextResponse.json({ error: 'ZRR invites require a zone (Arnava, Pravaha, Taranga, Varuna, Sagara, or Samudhra).' }, { status: 400 });
     }
 
     // 1. Create Clerk Invitation
@@ -87,8 +93,14 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           member_id: profileId,
           role: role,
-          club_id: clubId || null
+          club_id: clubId || null,
+          zone: assignedZone
         })
+      });
+    } else if (assignedZone) {
+      await supabaseFetch(`/member_roles?id=eq.${existingRoles[0].id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ zone: assignedZone })
       });
     }
 

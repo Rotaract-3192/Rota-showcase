@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { emailsForProfileLink } from "@/lib/clerk-emails";
 import { isDistrictRole } from "@/lib/member-sync";
+import { canonicalizeZone, isDistrictWideAdminRole, isZrrRole } from "@/lib/zones";
 
 export class AuthzError extends Error {
   status: number;
@@ -18,6 +19,9 @@ export type PortalActor = {
   clubId: string | null;
   roles: string[];
   isDistrict: boolean;
+  isDistrictWide: boolean;
+  isZrr: boolean;
+  zone: string | null;
   email: string | null;
 };
 
@@ -103,19 +107,25 @@ export async function getPortalActor(): Promise<PortalActor | null> {
 
   const { data: roleRows } = await supabase
     .from("member_roles")
-    .select("role, club_id")
+    .select("role, club_id, zone")
     .eq("member_id", profile.id)
     .is("deleted_at", null);
 
   const roles = (roleRows || []).map((r) => r.role);
   const roleClubId = (roleRows || []).find((r) => r.club_id)?.club_id || null;
+  const zrrZone = canonicalizeZone((roleRows || []).find((r) => isZrrRole(r.role))?.zone);
+  const isDistrictWide = roles.some(isDistrictWideAdminRole);
+  const isZrr = roles.some(isZrrRole);
 
   return {
     userId,
     profileId: profile.id,
     clubId: profile.club_id || roleClubId,
     roles,
-    isDistrict: roles.some(isDistrictRole),
+    isDistrict: isDistrictWide || isZrr,
+    isDistrictWide,
+    isZrr,
+    zone: isZrr ? zrrZone : null,
     email: emails[0] || null,
   };
 }
@@ -136,11 +146,33 @@ export async function requireAdminActor(): Promise<PortalActor> {
   return actor;
 }
 
-export function assertCanAccessClubRecord(
+async function clubZoneFor(clubId: string | null | undefined): Promise<string | null> {
+  if (!clubId) return null;
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("clubs")
+    .select("zone")
+    .eq("id", clubId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return canonicalizeZone(data?.zone);
+}
+
+export async function assertCanAccessClubRecord(
   actor: PortalActor,
   recordClubId: string | null | undefined
 ) {
-  if (actor.isDistrict) return;
+  if (actor.isDistrictWide) return;
+  if (actor.isZrr) {
+    if (!actor.zone) {
+      throw new AuthzError("Your ZRR account has no zone assigned. Ask a district admin to set it on member_roles.");
+    }
+    const zone = await clubZoneFor(recordClubId);
+    if (!zone || zone !== actor.zone) {
+      throw new AuthzError("You can only access clubs in your assigned zone.");
+    }
+    return;
+  }
   if (!actor.clubId) {
     throw new AuthzError("You are not assigned to a club.");
   }
@@ -149,9 +181,72 @@ export function assertCanAccessClubRecord(
   }
 }
 
+export async function applyWriteClubScope<T extends { club_id?: string | null }>(
+  actor: PortalActor,
+  payload: T
+): Promise<T> {
+  if (actor.isDistrictWide) {
+    if (!payload.club_id) {
+      throw new AuthzError("Club is required to save this report.");
+    }
+    return payload;
+  }
+  if (actor.isZrr) {
+    const clubId = payload.club_id || actor.clubId;
+    if (!clubId) {
+      throw new AuthzError("Select a club in your zone to save this report.");
+    }
+    await assertCanAccessClubRecord(actor, clubId);
+    return { ...payload, club_id: clubId };
+  }
+  if (!actor.clubId) {
+    throw new AuthzError("You must be assigned to a club to submit reports.");
+  }
+  return { ...payload, club_id: actor.clubId };
+}
+
 export function scopedClubId(actor: PortalActor): string | undefined {
-  if (actor.isDistrict) return undefined;
+  if (actor.isDistrictWide || actor.isZrr) return undefined;
   return actor.clubId || undefined;
+}
+
+export function scopedZone(actor: PortalActor): string | undefined {
+  if (actor.isZrr && actor.zone) return actor.zone;
+  return undefined;
+}
+
+export async function clubIdsInZone(zone: string): Promise<string[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("clubs")
+    .select("id, zone")
+    .is("deleted_at", null);
+  return (data || [])
+    .filter((club) => canonicalizeZone(club.zone) === zone)
+    .map((club) => club.id);
+}
+
+export async function scopedClubIds(actor: PortalActor): Promise<string[] | undefined> {
+  if (actor.isDistrictWide) return undefined;
+  if (actor.isZrr) {
+    if (!actor.zone) return [];
+    return clubIdsInZone(actor.zone);
+  }
+  return actor.clubId ? [actor.clubId] : [];
+}
+
+export async function resolveAdminZoneFilter(requestedZone?: string | null) {
+  const actor = await requireAdminActor();
+  if (actor.isDistrictWide) {
+    return { actor, filterZone: canonicalizeZone(requestedZone) };
+  }
+  if (!actor.zone) {
+    throw new AuthzError(
+      "Your ZRR account has no zone assigned. Ask a district admin to set member_roles.zone to Arnava, Pravaha, Taranga, Varuna, Sagara, or Samudhra.",
+      403
+    );
+  }
+  return { actor, filterZone: actor.zone };
 }
 
 export function jsonAuthzError(err: unknown) {

@@ -45,6 +45,19 @@ export class ActivityRepository extends BaseRepository<'activities'> {
         });
       }
 
+      if (options.clubIds) {
+        if (options.clubIds.length === 0) {
+          return {
+            data: [],
+            count: 0,
+            page: Math.max(1, options.pagination?.page || 1),
+            pageSize: Math.max(1, options.pagination?.pageSize || 20),
+            totalPages: 0,
+          };
+        }
+        query = query.in("club_id", options.clubIds);
+      }
+
       if (options.search?.query && options.search.columns && options.search.columns.length > 0) {
         const searchString = options.search.columns
           .map((col) => `${col}.ilike.%${options.search!.query}%`)

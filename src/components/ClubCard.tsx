@@ -41,7 +41,7 @@ export default function ClubCard({ club, rank }: ClubCardProps) {
             </h3>
             <div className="flex items-center gap-1 mt-1 text-[11px] font-metadata text-slate-400">
               <MapPin className="w-3 h-3 text-slate-500" />
-              <span>{club.zone}</span>
+              <span>{club.zone || "Unassigned"}</span>
               <span className="text-slate-600">•</span>
               <span>{club.clubType || "Community Based"}</span>
               <span className="text-slate-600">•</span>

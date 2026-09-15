@@ -16,6 +16,7 @@ import {
 import { useStore } from "@/store/useStore";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthContext } from "@/components/providers/auth-provider";
+import { isDistrictWideAdminRole, canonicalizeZone, DISTRICT_ZONES } from "@/lib/zones";
 import { 
   AreaChart, 
   Area, 
@@ -31,10 +32,8 @@ import {
 export default function AdminDashboardPage() {
   const { profileData } = useAuthContext();
   const zrrRole = profileData?.roles.find(r => r.role === 'ZRR');
-  const isSuperAdmin = profileData?.roles.some(r => 
-    ["District Admin", "District Core Team", "Super Admin", "Admin", "Administrator"].includes(r.role)
-  );
-  const userZone = zrrRole?.zone;
+  const isSuperAdmin = profileData?.roles.some(r => isDistrictWideAdminRole(r.role)) ?? false;
+  const userZone = canonicalizeZone(zrrRole?.zone);
 
   const { clubs, projects } = useStore(useShallow((state) => ({
     clubs: state.clubs,
@@ -172,12 +171,9 @@ export default function AdminDashboardPage() {
               className="px-3 py-1.5 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none disabled:opacity-60"
             >
               {isSuperAdmin && <option value="All">All Zones</option>}
-              <option value="Arnava">Arnava</option>
-              <option value="Pravaha">Pravaha</option>
-              <option value="Taranga">Taranga</option>
-              <option value="Varuna">Varuna</option>
-              <option value="Sagara">Sagara</option>
-              <option value="Samudhra">Samudhra</option>
+              {DISTRICT_ZONES.map((zone) => (
+                <option key={zone} value={zone}>{zone}</option>
+              ))}
             </select>
           </div>
 

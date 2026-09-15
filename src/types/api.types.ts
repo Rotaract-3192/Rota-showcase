@@ -26,6 +26,7 @@ export interface QueryOptions {
   sort?: SortParams;
   search?: SearchParams;
   filters?: FilterParams;
+  clubIds?: string[];
 }
 
 export interface PaginatedResponse<T> {

@@ -39,7 +39,7 @@ export default function AdminClubsPage() {
   });
 
   const filteredClubs = sortedClubs.filter(club => {
-    const matchesSearch = club.name.toLowerCase().includes(searchTerm.toLowerCase()) || club.zone.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = club.name.toLowerCase().includes(searchTerm.toLowerCase()) || (club.zone || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesZone = selectedZone === "All" || club.zone === selectedZone;
     const matchesType = selectedClubType === "All" || (club.clubType && club.clubType === selectedClubType);
     return matchesSearch && matchesZone && matchesType;

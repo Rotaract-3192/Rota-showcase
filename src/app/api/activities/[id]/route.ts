@@ -15,7 +15,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    assertCanAccessClubRecord(actor, existing.club_id);
+    await assertCanAccessClubRecord(actor, existing.club_id);
     await activityService.delete(id);
     return NextResponse.json({ success: true });
   } catch (error: any) {

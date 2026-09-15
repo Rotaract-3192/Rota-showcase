@@ -1,35 +1,72 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getPortalActor, scopedClubIds } from '@/lib/portal-auth';
+import { jsonAuthzError } from '@/lib/portal-auth';
+import { canonicalizeZone, displayZone } from '@/lib/zones';
 
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
+    const actor = await getPortalActor();
+    if (!actor) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // 1. Fetch all published activities to compute stats
-    const { data: activities, error: actError } = await supabase
+    const supabase = await createServerSupabaseClient();
+    const clubIds = await scopedClubIds(actor);
+
+    let activitiesQuery = supabase
       .from('activities')
-      .select('*')
+      .select('*, clubs(name, zone)')
       .eq('status', 'PUBLISHED')
       .is('deleted_at', null);
 
-    if (actError) throw actError;
-
-    // 2. Fetch total clubs
-    const { count: clubCount, error: clubError } = await supabase
+    let clubsQuery = supabase
       .from('clubs')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .is('deleted_at', null);
 
+    if (clubIds) {
+      if (clubIds.length === 0) {
+        return NextResponse.json({
+          stats: {
+            totalProjects: 0,
+            totalVolunteers: 0,
+            totalBeneficiaries: 0,
+            volunteerHours: 0,
+            contributions: 0,
+            activeClubs: 0,
+          },
+          trendData: [],
+          avenueData: [],
+          insights: {
+            mostActiveAvenueName: 'No Data Available',
+            mostActiveAvenueCount: 0,
+            highestImpactProjectName: 'No Data Available',
+            highestImpactProjectBeneficiaries: 0,
+            growthPercentage: '0%',
+          },
+          context: {
+            clubName: null,
+            zone: actor.zone,
+          },
+        });
+      }
+      activitiesQuery = activitiesQuery.in('club_id', clubIds);
+      clubsQuery = clubsQuery.in('id', clubIds);
+    }
+
+    const { data: activities, error: actError } = await activitiesQuery;
+    if (actError) throw actError;
+
+    const { count: clubCount, error: clubError } = await clubsQuery;
     if (clubError) throw clubError;
 
-    // 3. Compute metrics (default to 0 if no records)
     let totalProjects = 0;
     let totalVolunteers = 0;
     let totalBeneficiaries = 0;
     let volunteerHours = 0;
     let contributions = 0;
 
-    // Grouping structures
     const monthlyTrend: { [key: string]: number } = {};
     const avenueCount: { [key: string]: number } = {};
     
@@ -39,26 +76,20 @@ export async function GET() {
       activities.forEach((act: any) => {
         totalProjects++;
         totalVolunteers += act.volunteers || 0;
-        
-        // Task 3: Volunteer Hours = volunteers * hours_per_volunteer (we store volunteer_hours in DB now)
         volunteerHours += act.volunteer_hours || 0;
-        
         totalBeneficiaries += act.beneficiaries || 0;
         contributions += (act.cash_contribution || 0) + (act.in_kind_contribution || 0);
 
-        // Track highest impact activity by beneficiaries
         if (!highestImpactAct || (act.beneficiaries || 0) > (highestImpactAct.beneficiaries || 0)) {
           highestImpactAct = act;
         }
 
-        // Group by month for trend (e.g., "Jan", "Feb")
         if (act.start_time) {
           const date = new Date(act.start_time);
           const monthName = date.toLocaleString('default', { month: 'short' });
           monthlyTrend[monthName] = (monthlyTrend[monthName] || 0) + 1;
         }
 
-        // Group by avenue
         if (Array.isArray(act.avenues)) {
           act.avenues.forEach((ave: string) => {
             avenueCount[ave] = (avenueCount[ave] || 0) + 1;
@@ -67,7 +98,6 @@ export async function GET() {
       });
     }
 
-    // Format monthly trend data for chart
     const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const trendData = monthOrder
       .filter(m => monthlyTrend[m] !== undefined)
@@ -76,13 +106,11 @@ export async function GET() {
         activities: monthlyTrend[m] || 0
       }));
 
-    // Format avenue breakdown for chart
     const avenueData = Object.entries(avenueCount).map(([name, value]) => ({
       name,
       value
     }));
 
-    // Find most active avenue
     let mostActiveAvenueName = 'No Data Available';
     let mostActiveAvenueCount = 0;
     Object.entries(avenueCount).forEach(([name, count]) => {
@@ -91,6 +119,18 @@ export async function GET() {
         mostActiveAvenueName = name;
       }
     });
+
+    let clubName: string | null = null;
+    let zone: string | null = actor.zone;
+    if (actor.clubId) {
+      const { data: club } = await supabase
+        .from('clubs')
+        .select('name, zone')
+        .eq('id', actor.clubId)
+        .maybeSingle();
+      clubName = club?.name || null;
+      zone = canonicalizeZone(club?.zone) || zone;
+    }
 
     return NextResponse.json({
       stats: {
@@ -108,10 +148,16 @@ export async function GET() {
         mostActiveAvenueCount,
         highestImpactProjectName: highestImpactAct ? highestImpactAct.title : 'No Data Available',
         highestImpactProjectBeneficiaries: highestImpactAct ? (highestImpactAct.beneficiaries || 0) : 0,
-        growthPercentage: totalProjects > 0 ? '+24%' : '0%' // Arbitrary growth indicator but bound to activity count
+        growthPercentage: totalProjects > 0 ? '+24%' : '0%'
+      },
+      context: {
+        clubName,
+        zone: zone ? displayZone(zone) : null,
       }
     });
   } catch (err: any) {
+    const authz = jsonAuthzError(err);
+    if (authz) return NextResponse.json(authz.body, { status: authz.status });
     console.error('GET /api/portal/dashboard/stats error:', err);
     return NextResponse.json({ error: err.message || 'Failed to fetch dashboard stats' }, { status: 500 });
   }
