@@ -62,3 +62,8 @@ export function isZrrRole(role: string): boolean {
 export function displayZone(value: string | null | undefined): string {
   return canonicalizeZone(value) || value?.trim() || "Unassigned";
 }
+
+/** True for empty, Unknown, Unassigned, or labels that are not a district zone. */
+export function isDummyZone(value: string | null | undefined): boolean {
+  return canonicalizeZone(value) == null;
+}
