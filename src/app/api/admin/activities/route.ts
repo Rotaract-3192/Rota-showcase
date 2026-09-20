@@ -36,14 +36,50 @@ export async function GET(req: NextRequest) {
     const { filterZone } = await resolveAdminZoneFilter(searchParams.get('zone'));
     const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
 
-    let path = '/activities?select=id,title,status,created_at,type,start_time,description,venue,cover_image,supporting_image_1,supporting_image_2,beneficiaries,volunteer_hours,activity_expenses,volunteers,avenues,focus_areas,clubs!inner(name,zone)&deleted_at=is.null';
+    let path = '/activities?select=id,title,status,created_at,type,activity_category,start_time,description,venue,cover_image,supporting_image_1,supporting_image_2,beneficiaries,volunteer_hours,activity_expenses,volunteers,avenues,focus_areas,clubs!inner(name,zone)&deleted_at=is.null';
     if (clubIds) {
       if (clubIds.length === 0) return NextResponse.json([]);
       path += `&club_id=in.(${clubIds.join(',')})`;
     }
 
     const data = await supabaseFetch(path);
-    return NextResponse.json(data);
+    if (!Array.isArray(data) || data.length === 0) {
+      return NextResponse.json(data || []);
+    }
+
+    const ids = data.map((row: { id: string }) => row.id).filter(Boolean);
+    const logs = await supabaseFetch(
+      `/audit_logs?table_name=eq.activities&record_id=in.(${ids.join(',')})&select=record_id,actor_id,action,new_data,created_at&order=created_at.asc`
+    ).catch(() => []);
+
+    const actorIds = [...new Set((logs || []).map((log: { actor_id?: string }) => log.actor_id).filter(Boolean))];
+    const profiles = actorIds.length
+      ? await supabaseFetch(`/member_profiles?id=in.(${actorIds.join(',')})&select=id,first_name,last_name,email`).catch(() => [])
+      : [];
+    const profileById = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+    const reporterByActivity = new Map<string, { name: string; email: string }>();
+    for (const log of logs || []) {
+      if (log.action === 'UPDATE' || log.action === 'REJECT_ACTIVITY') continue;
+      let payload = log.new_data;
+      if (typeof payload === 'string') {
+        try { payload = JSON.parse(payload); } catch { payload = null; }
+      }
+      const profile = log.actor_id ? profileById.get(log.actor_id) : null;
+      const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim();
+      const email = profile?.email || payload?.reporter_email || '';
+      if (log.action === 'SUBMIT_ACTIVITY' || !reporterByActivity.has(log.record_id)) {
+        reporterByActivity.set(log.record_id, { name: name || email || '', email });
+      }
+    }
+
+    return NextResponse.json(
+      data.map((row: any) => ({
+        ...row,
+        reporter_name: reporterByActivity.get(row.id)?.name || null,
+        reporter_email: reporterByActivity.get(row.id)?.email || null,
+      }))
+    );
   } catch (err: any) {
     const authz = jsonAuthzError(err);
     if (authz) return NextResponse.json(authz.body, { status: authz.status });

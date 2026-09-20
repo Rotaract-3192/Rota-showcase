@@ -11,7 +11,10 @@ import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib
 interface Activity {
   id: string;
   type: string;
+  activityCategory: string;
   club: string;
+  reporterName: string;
+  reporterEmail: string;
   title: string;
   date: string;
   status: 'Pending' | 'Approved' | 'Cancelled';
@@ -49,9 +52,9 @@ export default function AdminActivitiesPage() {
     }
   }, [userZone, isSuperAdmin]);
 
-  const fetchActivities = async () => {
+  const fetchActivities = async (opts?: { silent?: boolean }) => {
     try {
-      setLoading(true);
+      if (!opts?.silent) setLoading(true);
       const filter = (!isSuperAdmin && userZone) ? userZone : selectedZone;
       const res = await fetch(apiUrl(`/api/admin/activities?zone=${encodeURIComponent(filter)}`));
       if (!res.ok) throw new Error("Failed to fetch activities");
@@ -61,7 +64,10 @@ export default function AdminActivitiesPage() {
         const mapped = data.map((act: any) => ({
           id: act.id,
           type: act.type || "Project",
+          activityCategory: act.activity_category || "Not specified",
           club: act.clubs?.name || "Independent Member",
+          reporterName: act.reporter_name || "",
+          reporterEmail: act.reporter_email || "",
           title: act.title,
           date: act.start_time ? new Date(act.start_time).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A",
           status: (act.status === 'PUBLISHED' ? 'Approved' : act.status === 'CANCELLED' ? 'Cancelled' : 'Pending') as 'Approved' | 'Pending' | 'Cancelled',
@@ -102,11 +108,14 @@ export default function AdminActivitiesPage() {
       if (!res.ok) throw new Error("Failed to approve activity");
       
       // Update local state if details modal is open
+      setActivities((prev) =>
+        prev.map((act) => (act.id === activityId ? { ...act, status: 'Approved' as const } : act))
+      );
       if (selectedActivity && selectedActivity.id === activityId) {
         setSelectedActivity({ ...selectedActivity, status: 'Approved' });
       }
 
-      await fetchActivities();
+      await fetchActivities({ silent: true });
     } catch (err) {
       console.error(err);
       alert("Failed to approve activity. Please try again.");
@@ -332,7 +341,12 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
                     <span className="text-[10px] text-slate-500 font-metadata">{act.date}</span>
                   </div>
                   <h4 className="text-lg font-bold text-white font-headline group-hover:text-electric-blue transition-colors">{act.title}</h4>
-                  <p className="text-xs text-slate-400 font-metadata">{act.club} • {act.type}</p>
+                  <p className="text-xs text-slate-400 font-metadata">{act.club} • {act.activityCategory}</p>
+                  {(act.reporterName || act.reporterEmail) && (
+                    <p className="text-[10px] text-slate-500 font-metadata mt-0.5">
+                      Reported by {act.reporterName || act.reporterEmail}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 mt-2 md:mt-0">
@@ -404,14 +418,22 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
               <div>
                 <h3 className="font-headline text-2xl font-bold text-white leading-tight">{selectedActivity.title}</h3>
                 <p className="text-xs text-electric-blue font-metadata uppercase tracking-wider font-bold mt-1">
-                  Reported by {selectedActivity.club}
+                  Reported by {selectedActivity.reporterName || selectedActivity.reporterEmail || "Unknown reporter"}
+                  {selectedActivity.reporterEmail && selectedActivity.reporterName ? ` · ${selectedActivity.reporterEmail}` : ""}
+                </p>
+                <p className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider mt-1">
+                  Club: {selectedActivity.club}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 border-y border-slate-800/60 py-3 text-xs">
                 <div>
-                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold block">Type</span>
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold block">Kind</span>
                   <span className="text-slate-200">{selectedActivity.type}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold block">Project type</span>
+                  <span className="text-slate-200">{selectedActivity.activityCategory}</span>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold block">Date</span>

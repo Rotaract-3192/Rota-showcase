@@ -3,12 +3,26 @@
 import { activityService } from '@/services/activity.service';
 import type { Database } from '@/types/database.types';
 import { applyWriteClubScope, requirePortalActor, assertCanAccessClubRecord } from '@/lib/portal-auth';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 export async function createActivityAction(payload: Database['public']['Tables']['activities']['Insert']) {
   const actor = await requirePortalActor();
   const scoped = await applyWriteClubScope(actor, payload);
   const result = await activityService.create(scoped);
-  
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    await supabase.from('audit_logs').insert({
+      actor_id: actor.profileId,
+      action: 'SUBMIT_ACTIVITY',
+      table_name: 'activities',
+      record_id: result.id,
+      new_data: { reporter_email: actor.email },
+    });
+  } catch (err) {
+    console.error('Failed to record activity reporter:', err);
+  }
+
   try {
     const { notifyRoleAction } = await import('@/actions/notification.actions');
     await Promise.all([

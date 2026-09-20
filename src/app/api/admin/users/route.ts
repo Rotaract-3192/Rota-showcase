@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
+import { canonicalizeZone, isZrrRole } from '@/lib/zones';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -31,7 +32,7 @@ async function supabaseFetch(path: string, options: RequestInit = {}) {
 export async function GET() {
   try {
     const data = await supabaseFetch(
-      '/member_profiles?select=id,first_name,last_name,email,phone,created_at,club_id,auth_id,clubs(name),member_roles(role)'
+      '/member_profiles?select=id,first_name,last_name,email,phone,created_at,club_id,auth_id,clubs(name,zone),member_roles(role,zone,club_id)'
     );
     return NextResponse.json(data);
   } catch (err: any) {
@@ -61,22 +62,32 @@ export async function DELETE(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, first_name, last_name, phone, club_id, role } = body;
+    const { id, first_name, last_name, phone, club_id, role, zone } = body;
 
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    // 1. Update member_profiles
+    const assignedZone = isZrrRole(role || '') ? canonicalizeZone(zone) : null;
+    if (isZrrRole(role || '') && !assignedZone) {
+      return NextResponse.json({
+        error: 'ZRR accounts need an assigned zone (the zone they oversee), not their home club zone.',
+      }, { status: 400 });
+    }
+
     await supabaseFetch(`/member_profiles?id=eq.${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ first_name, last_name, phone, club_id }),
     });
 
-    // 2. Update member_roles (assuming 1 role per user for now, or just delete and insert)
     if (role) {
       await supabaseFetch(`/member_roles?member_id=eq.${id}`, { method: 'DELETE' });
       await supabaseFetch('/member_roles', {
         method: 'POST',
-        body: JSON.stringify({ member_id: id, role, club_id }),
+        body: JSON.stringify({
+          member_id: id,
+          role,
+          club_id: club_id || null,
+          zone: assignedZone,
+        }),
       });
     }
 

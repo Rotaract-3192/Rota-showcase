@@ -35,8 +35,14 @@ const reportSchema = z.object({
   inKindContribution: z.coerce.number().min(0).optional(),
   participants: z.coerce.number().min(1, "Participants must be at least 1"),
   beneficiaries: z.coerce.number().min(0),
-  volunteers: z.coerce.number().min(1, "Volunteers must be at least 1"),
-  hoursPerVolunteer: z.coerce.number().min(1, "Hours per volunteer must be at least 1"),
+  volunteers: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined || Number.isNaN(value) ? 0 : value),
+    z.coerce.number().min(0)
+  ),
+  hoursPerVolunteer: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined || Number.isNaN(value) ? 0 : value),
+    z.coerce.number().min(0)
+  ),
   submitForPublication: z.boolean().optional(),
   featureActivity: z.boolean().optional(),
 });
@@ -128,6 +134,10 @@ export default function ReportActivityPage() {
       activityExpenses: 0,
       cashContribution: 0,
       inKindContribution: 0,
+      volunteers: 0,
+      hoursPerVolunteer: 0,
+      participants: 1,
+      beneficiaries: 0,
     },
   });
 
@@ -209,7 +219,7 @@ export default function ReportActivityPage() {
     if (currentStep === 1) isValid = await trigger(["title", "venue", "description"]);
     if (currentStep === 2) isValid = await trigger(["startDate", "endDate"]);
     if (currentStep === 3) isValid = await trigger(["avenues", "focusAreas"]);
-    if (currentStep === 4) isValid = await trigger(["participants", "beneficiaries", "volunteers", "hoursPerVolunteer"]);
+    if (currentStep === 4) isValid = await trigger(["participants", "beneficiaries"]);
     
     if (isValid && currentStep < 5) {
       const next = currentStep + 1;
@@ -264,8 +274,7 @@ export default function ReportActivityPage() {
         in_kind_contribution: data.inKindContribution || 0,
         participants: data.participants,
         beneficiaries: data.beneficiaries,
-        volunteers: data.volunteers,
-        // Task 3: Enforce calculation: Volunteer Hours = Number of Volunteers * Hours volunteered by each volunteer
+        volunteers: data.volunteers || 0,
         volunteer_hours: Math.round((data.volunteers || 0) * (data.hoursPerVolunteer || 0)),
         submit_for_publication: data.submitForPublication || false,
         feature_activity: data.featureActivity || false,
@@ -549,16 +558,16 @@ export default function ReportActivityPage() {
                   {errors.beneficiaries && <p className="text-red-400 text-xs">{errors.beneficiaries.message}</p>}
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Volunteers *</label>
-                  <input type="number" {...register("volunteers", { valueAsNumber: true })} className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none" placeholder="0" />
+                  <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Volunteers</label>
+                  <input type="number" min={0} {...register("volunteers", { valueAsNumber: true })} className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none" placeholder="0" />
                   {errors.volunteers && <p className="text-red-400 text-xs">{errors.volunteers.message}</p>}
                 </div>
-                <div className="flex flex-col gap-1.5 font-sans">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Hours Per Volunteer *</label>
-                    <span className="text-[9px] text-slate-500 font-metadata lowercase italic">Total hours volunteered by each person</span>
-                  </div>
-                  <input type="number" step="any" {...register("hoursPerVolunteer", { valueAsNumber: true })} className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none" placeholder="0" />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Hours Per Volunteer</label>
+                  <p className="text-[9px] text-slate-500 font-metadata italic leading-snug">
+                    Optional. Total hours volunteered by each person. Leave 0 for participatory projects.
+                  </p>
+                  <input type="number" min={0} step="any" {...register("hoursPerVolunteer", { valueAsNumber: true })} className="w-full px-4 py-3 rounded-xl bg-navy-deep/60 border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none" placeholder="0" />
                   {errors.hoursPerVolunteer && <p className="text-red-400 text-xs">{errors.hoursPerVolunteer.message}</p>}
                   <p className="text-[10px] text-slate-500 italic mt-0.5">
                     Note: Total Volunteer Hours is automatically calculated as: Volunteers × Hours per Volunteer

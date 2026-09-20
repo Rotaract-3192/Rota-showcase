@@ -14,7 +14,9 @@ interface User {
   phone?: string;
   clubId: string;
   clubName: string;
+  homeClubZone?: string;
   role: string;
+  zone?: string;
   status: 'Active' | 'Suspended' | 'Pending';
   joinedDate: string;
 }
@@ -26,7 +28,7 @@ export default function AdminUsersPage() {
 
   // Modal and invitation state
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [clubs, setClubs] = useState<{ id: string; name: string }[]>([]);
+  const [clubs, setClubs] = useState<{ id: string; name: string; zone?: string | null }[]>([]);
   const [inviteForm, setInviteForm] = useState({
     name: "",
     email: "",
@@ -45,7 +47,8 @@ export default function AdminUsersPage() {
     last_name: "",
     phone: "",
     club_id: "",
-    role: "President"
+    role: "President",
+    zone: ""
   });
   const [saving, setSaving] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -65,7 +68,12 @@ export default function AdminUsersPage() {
           phone: u.phone || "",
           clubId: u.club_id || "",
           clubName: u.clubs?.name || "No Club Affiliation",
-          role: u.member_roles?.[0]?.role || "President",
+          homeClubZone: u.clubs?.zone || "",
+          role: (u.member_roles || []).find((r: any) => String(r.role).toLowerCase() === "zrr")?.role
+            || u.member_roles?.[0]?.role
+            || "President",
+          zone: (u.member_roles || []).find((r: any) => String(r.role).toLowerCase() === "zrr")?.zone
+            || "",
           status: (u.auth_id?.startsWith("pending_") ? "Pending" : "Active") as 'Active' | 'Suspended' | 'Pending',
           joinedDate: u.created_at || new Date().toISOString()
         }));
@@ -138,6 +146,10 @@ export default function AdminUsersPage() {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
+    if (editForm.role.toLowerCase() === "zrr" && !editForm.zone) {
+      alert("Select the zone this ZRR oversees (not their home club).");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch(apiUrl('/api/admin/users'), {
@@ -286,7 +298,15 @@ export default function AdminUsersPage() {
           {
             header: "Club Affiliation",
             accessorKey: "clubName",
-            className: "text-slate-300 font-body text-xs"
+            className: "text-slate-300 font-body text-xs",
+            cell: (user: any) => (
+              <div className="flex flex-col">
+                <span>{user.clubName}</span>
+                {user.homeClubZone && (
+                  <span className="text-[10px] text-slate-500 font-metadata">Home zone: {user.homeClubZone}</span>
+                )}
+              </div>
+            )
           },
           {
             header: "Role",
@@ -298,7 +318,7 @@ export default function AdminUsersPage() {
                   isAdmin ? "bg-electric-blue/10 text-electric-blue border-electric-blue/20" : "bg-slate-800 text-slate-300 border-slate-700"
                 )}>
                   {isAdmin && <Shield className="w-3 h-3 mr-1" />}
-                  {user.role}
+                  {user.role}{user.role === "ZRR" && user.zone ? ` · ${user.zone}` : ""}
                 </span>
               );
             }
@@ -338,7 +358,8 @@ export default function AdminUsersPage() {
                       last_name: user.name.split(' ').slice(1).join(' ') || '',
                       phone: user.phone || '',
                       club_id: user.clubId || '',
-                      role: user.role || 'Member'
+                      role: user.role || 'Member',
+                      zone: user.zone || ''
                     });
                     setEditingUser(user);
                   }}
@@ -423,7 +444,7 @@ export default function AdminUsersPage() {
                   <option value="" className="bg-navy-deep text-slate-400">Select a club...</option>
                   {clubs.map((c) => (
                     <option key={c.id} value={c.id} className="bg-navy-deep text-white">
-                      {c.name}
+                      {c.name}{c.zone ? ` · ${c.zone}` : ""}
                     </option>
                   ))}
                 </select>
@@ -549,7 +570,7 @@ export default function AdminUsersPage() {
                 </div>
                 <div className="flex flex-col gap-1 col-span-2">
                   <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Role</span>
-                  <span className="text-white">{selectedUser.role}</span>
+                  <span className="text-white">{selectedUser.role}{selectedUser.role === "ZRR" && selectedUser.zone ? ` · ${selectedUser.zone}` : ""}</span>
                 </div>
                 <div className="flex flex-col gap-1 col-span-2">
                   <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Club Affiliation</span>
@@ -630,7 +651,7 @@ export default function AdminUsersPage() {
                   <option value="" className="bg-navy-deep text-slate-400">Select a club...</option>
                   {clubs.map((c) => (
                     <option key={c.id} value={c.id} className="bg-navy-deep text-white">
-                      {c.name}
+                      {c.name}{c.zone ? ` · ${c.zone}` : ""}
                     </option>
                   ))}
                 </select>
@@ -641,7 +662,7 @@ export default function AdminUsersPage() {
                 <select
                   required
                   value={editForm.role}
-                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value, zone: e.target.value.toLowerCase() === "zrr" ? editForm.zone : "" })}
                   className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 font-body appearance-none cursor-pointer font-bold"
                 >
                   <option value="President" className="bg-navy-deep text-white">President</option>
@@ -652,6 +673,26 @@ export default function AdminUsersPage() {
                   <option value="Super Admin" className="bg-navy-deep text-white">Super Admin</option>
                 </select>
               </div>
+
+              {editForm.role.toLowerCase() === "zrr" && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">ZRR zone (from member_roles)</label>
+                  <p className="text-[10px] text-slate-500">
+                    Home club zone in the clubs table: {editingUser?.homeClubZone || "Unassigned"}. ZRR access uses this assigned zone, not the home club.
+                  </p>
+                  <select
+                    required
+                    value={editForm.zone}
+                    onChange={(e) => setEditForm({ ...editForm, zone: e.target.value })}
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 font-body appearance-none cursor-pointer"
+                  >
+                    <option value="" className="bg-navy-deep text-slate-400">Select a zone...</option>
+                    {DISTRICT_ZONES.map((zone) => (
+                      <option key={zone} value={zone} className="bg-navy-deep text-white">{zone}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex items-center gap-3 mt-2">
                 <button 

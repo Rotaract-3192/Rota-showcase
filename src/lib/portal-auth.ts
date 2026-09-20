@@ -113,6 +113,7 @@ export async function getPortalActor(): Promise<PortalActor | null> {
 
   const roles = (roleRows || []).map((r) => r.role);
   const roleClubId = (roleRows || []).find((r) => r.club_id)?.club_id || null;
+  // ZRR scope is only member_roles.zone (the zone they oversee). Never derive it from home club.
   const zrrZone = canonicalizeZone((roleRows || []).find((r) => isZrrRole(r.role))?.zone);
   const isDistrictWide = roles.some(isDistrictWideAdminRole);
   const isZrr = roles.some(isZrrRole);
