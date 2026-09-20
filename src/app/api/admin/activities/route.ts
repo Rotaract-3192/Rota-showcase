@@ -52,11 +52,20 @@ export async function GET(req: NextRequest) {
       `/audit_logs?table_name=eq.activities&record_id=in.(${ids.join(',')})&select=record_id,actor_id,action,new_data,created_at&order=created_at.asc`
     ).catch(() => []);
 
-    const actorIds = [...new Set((logs || []).map((log: { actor_id?: string }) => log.actor_id).filter(Boolean))];
-    const profiles = actorIds.length
+    type ActorProfile = {
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+    };
+
+    const actorIds = [...new Set((logs || []).map((log: { actor_id?: string }) => log.actor_id).filter(Boolean))] as string[];
+    const profiles: ActorProfile[] = actorIds.length
       ? await supabaseFetch(`/member_profiles?id=in.(${actorIds.join(',')})&select=id,first_name,last_name,email`).catch(() => [])
       : [];
-    const profileById = new Map((profiles || []).map((p: any) => [p.id, p]));
+    const profileById = new Map<string, ActorProfile>(
+      (Array.isArray(profiles) ? profiles : []).map((p) => [p.id, p])
+    );
 
     const reporterByActivity = new Map<string, { name: string; email: string }>();
     for (const log of logs || []) {
