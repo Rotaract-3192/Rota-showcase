@@ -17,7 +17,8 @@ import {
   FileText,
   Search
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import ReportingPeriodSelect from "@/components/admin/ReportingPeriodSelect";
+import { currentMonthPeriod } from "@/lib/reporting-period";
 
 interface Meeting {
   id: string;
@@ -73,6 +74,7 @@ export default function AdminOperationsPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedZone, setSelectedZone] = useState<string>("All");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(currentMonthPeriod());
 
   // Set default zone if user is ZRR
   useEffect(() => {
@@ -100,7 +102,7 @@ export default function AdminOperationsPage() {
         setErrorMsg("");
         
         const filter = (!isSuperAdmin && userZone) ? userZone : selectedZone;
-        const res = await fetch(`/api/admin/operations?zone=${encodeURIComponent(filter)}`);
+        const res = await fetch(`/api/admin/operations?zone=${encodeURIComponent(filter)}&period=${encodeURIComponent(selectedPeriod)}`);
         if (!res.ok) {
           const err = await res.json();
           throw new Error(err.error || "Failed to load operations reports");
@@ -118,7 +120,7 @@ export default function AdminOperationsPage() {
       }
     }
     fetchData();
-  }, [selectedZone, userZone, isSuperAdmin]);
+  }, [selectedZone, selectedPeriod, userZone, isSuperAdmin]);
 
   const getFilteredData = () => {
     const query = searchQuery.toLowerCase();
@@ -165,8 +167,9 @@ export default function AdminOperationsPage() {
           </p>
         </div>
 
-        {/* Zone Filter Dropdown */}
-        <div className="flex flex-col gap-1.5 min-w-[180px]">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <ReportingPeriodSelect value={selectedPeriod} onChange={setSelectedPeriod} />
+          <div className="flex flex-col gap-1.5 min-w-[180px]">
           <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
           <select
             value={selectedZone}
@@ -179,8 +182,8 @@ export default function AdminOperationsPage() {
               <option key={zone} value={zone}>{zone}</option>
             ))}
           </select>
+          </div>
         </div>
-      </div>
 
       {/* Navigation Tabs */}
       <div className="flex border-b border-slate-800/60 gap-2 overflow-x-auto pb-1">

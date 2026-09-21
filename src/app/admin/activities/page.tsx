@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import GlassPanel from "@/components/GlassPanel";
-import { Clock, CheckCircle2, XCircle, Search, Filter, AlertTriangle, Loader2, FileDown, Eye } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Search, Filter, AlertTriangle, Loader2, FileDown, Eye, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiUrl } from "@/lib/api";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib/zones";
-import { AVENUES_OF_SERVICE, activityMatchesAvenue } from "@/lib/avenues";
+import ReportingPeriodSelect from "@/components/admin/ReportingPeriodSelect";
+import { currentMonthPeriod } from "@/lib/reporting-period";
 
 interface Activity {
   id: string;
@@ -46,6 +47,7 @@ export default function AdminActivitiesPage() {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [selectedZone, setSelectedZone] = useState<string>("All");
   const [selectedAvenue, setSelectedAvenue] = useState<string>("All");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(currentMonthPeriod());
 
   // Set default zone if user is ZRR
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function AdminActivitiesPage() {
     try {
       if (!opts?.silent) setLoading(true);
       const filter = (!isSuperAdmin && userZone) ? userZone : selectedZone;
-      const res = await fetch(apiUrl(`/api/admin/activities?zone=${encodeURIComponent(filter)}`));
+      const res = await fetch(apiUrl(`/api/admin/activities?zone=${encodeURIComponent(filter)}&period=${encodeURIComponent(selectedPeriod)}`));
       if (!res.ok) throw new Error("Failed to fetch activities");
       const data = await res.json();
       
@@ -97,7 +99,7 @@ export default function AdminActivitiesPage() {
 
   useEffect(() => {
     fetchActivities();
-  }, [selectedZone, userZone, isSuperAdmin]);
+  }, [selectedZone, selectedPeriod, userZone, isSuperAdmin]);
 
   const handleApprove = async (activityId: string) => {
     try {
@@ -121,6 +123,26 @@ export default function AdminActivitiesPage() {
     } catch (err) {
       console.error(err);
       alert("Failed to approve activity. Please try again.");
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleAdminDelete = async (activityId: string, title: string) => {
+    if (!window.confirm(`Remove "${title}" for the club? They will see it as Deleted by Admin.`)) return;
+    try {
+      setActionInProgress(activityId);
+      const res = await fetch(apiUrl('/api/admin/activities'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activityId, action: 'Deleted' }),
+      });
+      if (!res.ok) throw new Error("Failed to delete activity");
+      setSelectedActivity(null);
+      await fetchActivities({ silent: true });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete activity. Please try again.");
     } finally {
       setActionInProgress(null);
     }
@@ -215,7 +237,7 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
         styles: { fontSize: 8 },
         headStyles: { fillColor: [0, 240, 255], textColor: [11, 17, 32] },
       });
-      doc.save("District_3192_Activities_Review_Queue.pdf");
+      doc.save(`District_3192_Activities_${selectedPeriod}.pdf`);
     } else {
       const csvRows = rows.map(r => r.map((c: any) => typeof c === 'string' ? `"${c.replace(/"/g, '""')}"` : c));
       const csvContent = [headers.join(","), ...csvRows.map((r: any) => r.join(","))].join("\n");
@@ -223,7 +245,7 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `District_3192_Activities_Review_Queue.csv`);
+      link.setAttribute("download", `District_3192_Activities_${selectedPeriod}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -252,7 +274,7 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-        {/* Zone Filter Dropdown */}
+        <ReportingPeriodSelect value={selectedPeriod} onChange={setSelectedPeriod} />
         <div className="flex flex-col gap-1.5 min-w-[180px]">
           <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
           <select
@@ -386,7 +408,15 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
                   >
                     <FileDown className="w-4 h-4" />
                   </button>
-                  {act.status === 'Pending' && (
+                    <button 
+                      onClick={() => handleAdminDelete(act.id, act.title)}
+                      disabled={actionInProgress === act.id}
+                      className="px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      title="Delete for club"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                    {act.status === 'Pending' && (
                     <button 
                       onClick={() => handleApprove(act.id)}
                       disabled={actionInProgress === act.id}
@@ -537,6 +567,13 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
                 </button>
               </div>
 
+              <button
+                onClick={() => handleAdminDelete(selectedActivity.id, selectedActivity.title)}
+                disabled={actionInProgress === selectedActivity.id}
+                className="px-4 py-2 rounded-lg bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-400 text-xs font-bold font-metadata transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" /> Delete project
+              </button>
               {selectedActivity.status === 'Pending' && (
                 <button
                   onClick={() => handleApprove(selectedActivity.id)}

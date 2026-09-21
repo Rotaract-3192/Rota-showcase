@@ -6,11 +6,14 @@ import GlassPanel from "@/components/GlassPanel";
 import { useStore, Project } from "@/store/useStore";
 import { Layers, CheckCircle, XCircle, Eye, X, Calendar, Clock, Heart, DollarSign, Award } from "lucide-react";
 import { AVENUES_OF_SERVICE, activityMatchesAvenue } from "@/lib/avenues";
+import ReportingPeriodSelect from "@/components/admin/ReportingPeriodSelect";
+import { currentMonthPeriod, inPeriod, periodRange } from "@/lib/reporting-period";
 
 export default function AdminProjectsPage() {
   const projects = useStore((state) => state.projects);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAvenue, setSelectedAvenue] = useState("All");
+  const [selectedPeriod, setSelectedPeriod] = useState(currentMonthPeriod());
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -22,7 +25,8 @@ export default function AdminProjectsPage() {
   const filteredProjects = projects.filter(project => 
     (project.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     project.clubName.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (selectedAvenue === "All" || project.avenueOfService === selectedAvenue || activityMatchesAvenue([project.avenueOfService], selectedAvenue))
+    (selectedAvenue === "All" || project.avenueOfService === selectedAvenue || activityMatchesAvenue([project.avenueOfService], selectedAvenue)) &&
+    inPeriod(project.uploadDate, periodRange(selectedPeriod))
   );
 
   return (
@@ -42,7 +46,9 @@ export default function AdminProjectsPage() {
             Review, feature, and moderate all projects submitted across the district.
           </p>
         </div>
-        <div className="flex flex-col gap-1.5 min-w-[180px]">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <ReportingPeriodSelect value={selectedPeriod} onChange={setSelectedPeriod} />
+          <div className="flex flex-col gap-1.5 min-w-[180px]">
           <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Avenue</label>
           <select
             value={selectedAvenue}
@@ -54,8 +60,8 @@ export default function AdminProjectsPage() {
               <option key={avenue} value={avenue}>{avenue}</option>
             ))}
           </select>
+          </div>
         </div>
-      </div>
 
       <AdminDataTable<Project>
         title="Project Submissions"

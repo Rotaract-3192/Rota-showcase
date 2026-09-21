@@ -35,8 +35,11 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const { filterZone } = await resolveAdminZoneFilter(searchParams.get('zone'));
     const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
+    const { periodRange, restTimeFilter } = await import('@/lib/reporting-period');
+    const range = periodRange(searchParams.get('period') || 'ry');
 
     let path = '/activities?select=id,title,status,created_at,type,activity_category,start_time,description,venue,cover_image,supporting_image_1,supporting_image_2,beneficiaries,volunteer_hours,activity_expenses,volunteers,avenues,focus_areas,submit_for_publication,clubs!inner(name,zone)&deleted_at=is.null';
+    path += restTimeFilter('start_time', range);
     if (clubIds) {
       if (clubIds.length === 0) return NextResponse.json([]);
       path += `&club_id=in.(${clubIds.join(',')})`;
@@ -117,23 +120,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing activityId or action' }, { status: 400 });
     }
 
-    const newStatus = action === 'Approved' ? 'PUBLISHED' : 'CANCELLED';
+    const newStatus = action === 'Approved' ? 'PUBLISHED' : action === 'Deleted' ? 'CANCELLED' : 'CANCELLED';
 
-    // Update status in activities table
-    await supabaseFetch(`/activities?id=eq.${activityId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: newStatus })
-    });
+    const patchBody: Record<string, unknown> = { status: newStatus };
+    if (action === 'Deleted') {
+      patchBody.deleted_at = new Date().toISOString();
+      patchBody.removed_by_admin = true;
+      patchBody.admin_removed_reason = 'Removed by district admin';
+    }
 
-    // Log action in audit_logs
+    try {
+      await supabaseFetch(`/activities?id=eq.${activityId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patchBody)
+      });
+    } catch (patchErr: any) {
+      if (action === 'Deleted') {
+        await supabaseFetch(`/activities?id=eq.${activityId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'CANCELLED', deleted_at: new Date().toISOString() })
+        });
+      } else {
+        throw patchErr;
+      }
+    }
+
     await supabaseFetch('/audit_logs', {
       method: 'POST',
       body: JSON.stringify({
         actor_id: adminProfileId,
-        action: action === 'Approved' ? 'UPDATE' : 'REJECT_ACTIVITY', // We can use UPDATE or APPROVE_ACTIVITY
+        action: action === 'Approved' ? 'UPDATE' : action === 'Deleted' ? 'ADMIN_DELETE_ACTIVITY' : 'REJECT_ACTIVITY',
         table_name: 'activities',
         record_id: activityId,
-        new_data: JSON.stringify({ status: newStatus })
+        new_data: JSON.stringify(patchBody)
       })
     });
 
@@ -152,9 +171,11 @@ export async function POST(req: NextRequest) {
               method: 'POST',
               body: JSON.stringify({
                 auth_id: leader.member_profiles.auth_id,
-                title: action === 'Approved' ? 'Activity Approved' : 'Activity Rejected',
-                message: `Your activity "${title}" has been ${action.toLowerCase()}.`,
-                link: '/admin/activities',
+                title: action === 'Approved' ? 'Activity Approved' : action === 'Deleted' ? 'Activity removed by district' : 'Activity Rejected',
+                message: action === 'Deleted'
+                  ? `District admin removed "${title}". It will show as Deleted by Admin in Club Activities.`
+                  : `Your activity "${title}" has been ${action.toLowerCase()}.`,
+                link: '/portal/activities',
                 is_read: false
               })
             });

@@ -5,6 +5,8 @@ import GlassPanel from "@/components/GlassPanel";
 import AdminDataTable from "@/components/admin/AdminDataTable";
 import { FileText, ExternalLink, Loader2 } from "lucide-react";
 import { apiUrl } from "@/lib/api";
+import ReportingPeriodSelect from "@/components/admin/ReportingPeriodSelect";
+import { currentMonthPeriod, inPeriod, periodRange } from "@/lib/reporting-period";
 
 interface PublicationRequest {
   id: string;
@@ -30,12 +32,14 @@ export default function AdminPublicationsPage() {
   const [bulletinsError, setBulletinsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPeriod, setSelectedPeriod] = useState(currentMonthPeriod());
 
   useEffect(() => {
     async function load() {
       try {
+        setLoading(true);
         const [actsRes, bulletinsRes] = await Promise.all([
-          fetch(apiUrl("/api/admin/activities?zone=All")),
+          fetch(apiUrl(`/api/admin/activities?zone=All&period=${encodeURIComponent(selectedPeriod)}`)),
           fetch(apiUrl("/api/admin/bulletins")),
         ]);
         if (actsRes.ok) {
@@ -56,7 +60,9 @@ export default function AdminPublicationsPage() {
         if (bulletinsRes.ok) {
           const rows = await bulletinsRes.json();
           setBulletins(
-            (Array.isArray(rows) ? rows : []).map((row: any) => ({
+            (Array.isArray(rows) ? rows : [])
+              .filter((row: any) => inPeriod(row.created_at, periodRange(selectedPeriod)))
+              .map((row: any) => ({
               id: row.id,
               title: row.title,
               edition: row.edition || "",
@@ -76,7 +82,7 @@ export default function AdminPublicationsPage() {
       }
     }
     load();
-  }, []);
+  }, [selectedPeriod]);
 
   const filteredRequests = requests.filter((item) =>
     `${item.title} ${item.club}`.toLowerCase().includes(searchTerm.toLowerCase())
@@ -89,6 +95,9 @@ export default function AdminPublicationsPage() {
         <p className="text-slate-400 text-sm font-body mt-1">
           Monthly club bulletin PDFs from Portal → Bulletin. Activity PR requests are listed separately below.
         </p>
+      </div>
+      <div className="flex justify-end">
+        <ReportingPeriodSelect value={selectedPeriod} onChange={setSelectedPeriod} />
       </div>
 
       {loading ? (

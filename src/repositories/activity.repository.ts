@@ -34,8 +34,13 @@ export class ActivityRepository extends BaseRepository<'activities'> {
       const supabase = await createServerSupabaseClient();
       let query = supabase
         .from('activities')
-        .select(ACTIVITY_SELECT, { count: 'exact' })
-        .is('deleted_at', null);
+        .select(ACTIVITY_SELECT, { count: 'exact' });
+
+      if (options.includeAdminRemoved) {
+        query = query.or('deleted_at.is.null,removed_by_admin.eq.true');
+      } else {
+        query = query.is('deleted_at', null);
+      }
 
       if (options.filters) {
         Object.entries(options.filters).forEach(([key, value]) => {
@@ -88,6 +93,9 @@ export class ActivityRepository extends BaseRepository<'activities'> {
         totalPages: Math.ceil((count || 0) / pageSize),
       };
     } catch (err) {
+      if (options.includeAdminRemoved) {
+        return this.findMany({ ...options, includeAdminRemoved: false });
+      }
       handleSupabaseError(err, 'activities.findMany');
       throw err;
     }

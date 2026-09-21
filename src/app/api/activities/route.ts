@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
       } else if (requestedClubId) {
         options.filters.club_id = requestedClubId;
       }
+      options.includeAdminRemoved = true;
     } else {
       options.filters.status = status || 'PUBLISHED';
       if (requestedClubId) {

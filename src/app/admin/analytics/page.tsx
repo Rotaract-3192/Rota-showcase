@@ -14,10 +14,11 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { TrendingUp, Building, Loader2 } from "lucide-react";
+import { TrendingUp, Building, Loader2, Users, HeartHandshake, CircleDollarSign, ClipboardCheck } from "lucide-react";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib/zones";
 import { apiUrl } from "@/lib/api";
+import ReportingPeriodSelect from "@/components/admin/ReportingPeriodSelect";
 
 const COLORS = ["#00f0ff", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#ef4444", "#14b8a6"];
 
@@ -27,8 +28,19 @@ export default function AdminAnalyticsPage() {
   const isSuperAdmin = profileData?.roles.some((r) => isDistrictWideAdminRole(r.role)) ?? false;
   const userZone = canonicalizeZone(zrrRole?.zone);
   const [selectedZone, setSelectedZone] = useState("All");
+  const [selectedPeriod, setSelectedPeriod] = useState("ry");
   const [loading, setLoading] = useState(true);
-  const [totals, setTotals] = useState({ reported: 0, published: 0, pending: 0, unspecifiedAvenue: 0 });
+  const [totals, setTotals] = useState({
+    reported: 0,
+    published: 0,
+    pending: 0,
+    unspecifiedAvenue: 0,
+    volunteers: 0,
+    beneficiaries: 0,
+    fundsRaised: 0,
+    clubsReported: 0,
+    clubsTotal: 0,
+  });
   const [avenueData, setAvenueData] = useState<{ name: string; value: number }[]>([]);
   const [zoneData, setZoneData] = useState<{ name: string; clubs: number; members: number; projects: number }[]>([]);
 
@@ -39,16 +51,19 @@ export default function AdminAnalyticsPage() {
   useEffect(() => {
     const filter = !isSuperAdmin && userZone ? userZone : selectedZone;
     setLoading(true);
-    fetch(apiUrl(`/api/admin/analytics?zone=${encodeURIComponent(filter)}`))
+    fetch(apiUrl(`/api/admin/analytics?zone=${encodeURIComponent(filter)}&period=${encodeURIComponent(selectedPeriod)}`))
       .then((res) => res.json())
       .then((data) => {
-        setTotals(data.totals || { reported: 0, published: 0, pending: 0, unspecifiedAvenue: 0 });
+        setTotals(data.totals || {
+          reported: 0, published: 0, pending: 0, unspecifiedAvenue: 0,
+          volunteers: 0, beneficiaries: 0, fundsRaised: 0, clubsReported: 0, clubsTotal: 0,
+        });
         setAvenueData(data.avenueData || []);
         setZoneData(data.zoneData || []);
       })
       .catch((err) => console.error("Failed to load analytics:", err))
       .finally(() => setLoading(false));
-  }, [selectedZone, userZone, isSuperAdmin]);
+  }, [selectedZone, selectedPeriod, userZone, isSuperAdmin]);
 
   const topZone = zoneData[0] || { name: "N/A", projects: 0 };
   const avgProjects = zoneData.reduce((sum, row) => sum + row.clubs, 0)
@@ -65,7 +80,9 @@ export default function AdminAnalyticsPage() {
             Live counts from every reported activity, not a 100-project sample.
           </p>
         </div>
-        <div className="flex flex-col gap-1.5 min-w-[180px]">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <ReportingPeriodSelect value={selectedPeriod} onChange={setSelectedPeriod} />
+          <div className="flex flex-col gap-1.5 min-w-[180px]">
           <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
           <select
             value={!isSuperAdmin && userZone ? userZone : selectedZone}
@@ -78,6 +95,7 @@ export default function AdminAnalyticsPage() {
               <option key={zone} value={zone}>{zone}</option>
             ))}
           </select>
+          </div>
         </div>
       </div>
 
@@ -89,14 +107,27 @@ export default function AdminAnalyticsPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40">
-              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Reported projects</span>
+              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Projects executed</span>
               <p className="text-xl font-headline font-bold text-white mt-1">{totals.reported}</p>
-              <p className="text-[10px] text-slate-500 mt-1">All submissions, including drafts</p>
+              <p className="text-[10px] text-slate-500 mt-1">{totals.published} published · {totals.pending} drafts</p>
             </GlassPanel>
             <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40">
-              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Published projects</span>
-              <p className="text-xl font-headline font-bold text-white mt-1">{totals.published}</p>
-              <p className="text-[10px] text-slate-500 mt-1">Avenue chart uses this total</p>
+              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold flex items-center gap-1"><Users className="w-3 h-3" /> Volunteers engaged</span>
+              <p className="text-xl font-headline font-bold text-white mt-1">{totals.volunteers.toLocaleString("en-IN")}</p>
+            </GlassPanel>
+            <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40">
+              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold flex items-center gap-1"><HeartHandshake className="w-3 h-3" /> Beneficiaries impacted</span>
+              <p className="text-xl font-headline font-bold text-white mt-1">{totals.beneficiaries.toLocaleString("en-IN")}</p>
+            </GlassPanel>
+            <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40">
+              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold flex items-center gap-1"><CircleDollarSign className="w-3 h-3" /> Funds raised</span>
+              <p className="text-xl font-headline font-bold text-white mt-1">₹{totals.fundsRaised.toLocaleString("en-IN")}</p>
+              <p className="text-[10px] text-slate-500 mt-1">Cash + in-kind, else project cost</p>
+            </GlassPanel>
+            <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40">
+              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold flex items-center gap-1"><ClipboardCheck className="w-3 h-3" /> Clubs completed reporting</span>
+              <p className="text-xl font-headline font-bold text-white mt-1">{totals.clubsReported} / {totals.clubsTotal}</p>
+              <p className="text-[10px] text-slate-500 mt-1">Clubs with at least one submission in this period</p>
             </GlassPanel>
             <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40 flex items-center justify-between">
               <div>
@@ -111,6 +142,11 @@ export default function AdminAnalyticsPage() {
                 <p className="text-xl font-headline font-bold text-white mt-1">{avgProjects}</p>
               </div>
               <Building className="w-8 h-8 text-emerald-400 opacity-30" />
+            </GlassPanel>
+            <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40">
+              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Published projects</span>
+              <p className="text-xl font-headline font-bold text-white mt-1">{totals.published}</p>
+              <p className="text-[10px] text-slate-500 mt-1">Used for avenue chart</p>
             </GlassPanel>
           </div>
 

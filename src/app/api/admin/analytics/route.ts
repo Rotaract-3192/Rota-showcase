@@ -3,6 +3,7 @@ import { generateSupabaseJWT } from "@/lib/jwt";
 import { clubIdsInZone, jsonAuthzError, resolveAdminZoneFilter } from "@/lib/portal-auth";
 import { activityAvenues } from "@/lib/avenues";
 import { canonicalizeZone, isDummyZone } from "@/lib/zones";
+import { periodRange, restTimeFilter } from "@/lib/reporting-period";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -45,15 +46,27 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const { filterZone } = await resolveAdminZoneFilter(searchParams.get("zone"));
+    const range = periodRange(searchParams.get("period") || "ry");
     const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
 
     let clubsPath = "/clubs?select=id,name,zone,member_count,total_projects&deleted_at=is.null";
     let activitiesPath =
-      "/activities?select=id,status,avenues,club_id,clubs(name,zone)&deleted_at=is.null";
+      "/activities?select=id,status,avenues,club_id,start_time,volunteers,beneficiaries,activity_expenses,cash_contribution,in_kind_contribution,clubs(name,zone)&deleted_at=is.null";
+    activitiesPath += restTimeFilter("start_time", range);
     if (clubIds) {
       if (clubIds.length === 0) {
         return NextResponse.json({
-          totals: { reported: 0, published: 0, pending: 0, unspecifiedAvenue: 0 },
+          totals: {
+            reported: 0,
+            published: 0,
+            pending: 0,
+            unspecifiedAvenue: 0,
+            volunteers: 0,
+            beneficiaries: 0,
+            fundsRaised: 0,
+            clubsReported: 0,
+            clubsTotal: 0,
+          },
           avenueData: [],
           zoneData: [],
         });
@@ -114,12 +127,31 @@ export async function GET(req: NextRequest) {
     });
     zoneData.sort((a: any, b: any) => b.projects - a.projects);
 
+    let volunteers = 0;
+    let beneficiaries = 0;
+    let fundsRaised = 0;
+    const reportedClubIds = new Set<string>();
+    activities.forEach((act: any) => {
+      volunteers += Number(act.volunteers) || 0;
+      beneficiaries += Number(act.beneficiaries) || 0;
+      const cash = Number(act.cash_contribution) || 0;
+      const inKind = Number(act.in_kind_contribution) || 0;
+      const expenses = Number(act.activity_expenses) || 0;
+      fundsRaised += cash + inKind > 0 ? cash + inKind : expenses;
+      if (act.club_id) reportedClubIds.add(act.club_id);
+    });
+
     return NextResponse.json({
       totals: {
         reported: activities.length,
         published: published.length,
         pending: pending.length,
         unspecifiedAvenue,
+        volunteers,
+        beneficiaries,
+        fundsRaised,
+        clubsReported: reportedClubIds.size,
+        clubsTotal: clubs.length,
       },
       avenueData,
       zoneData,

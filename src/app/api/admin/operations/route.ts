@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { clubIdsInZone, jsonAuthzError, resolveAdminZoneFilter } from "@/lib/portal-auth";
+import { periodRange } from "@/lib/reporting-period";
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const { filterZone } = await resolveAdminZoneFilter(searchParams.get("zone"));
     const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
+    const range = periodRange(searchParams.get("period") || "ry");
 
     const supabase = await createServerSupabaseClient();
 
@@ -89,6 +91,15 @@ export async function GET(req: NextRequest) {
       orientationsQuery = orientationsQuery.in("club_id", clubIds);
       installationsQuery = installationsQuery.in("club_id", clubIds);
       dovsQuery = dovsQuery.in("club_id", clubIds);
+    }
+
+    if (range) {
+      const start = range.start.slice(0, 10);
+      const end = range.end.slice(0, 10);
+      meetingsQuery = meetingsQuery.gte("date", start).lt("date", end);
+      orientationsQuery = orientationsQuery.gte("date", start).lt("date", end);
+      installationsQuery = installationsQuery.gte("date", start).lt("date", end);
+      dovsQuery = dovsQuery.gte("date", start).lt("date", end);
     }
 
     const [meetingsRes, orientationsRes, installationsRes, dovsRes] = await Promise.all([

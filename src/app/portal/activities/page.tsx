@@ -25,6 +25,8 @@ interface Project {
   uploadDate: string;
   avenueOfService: string;
   impactScore: number;
+  status: string;
+  adminRemoved: boolean;
 }
 
 export default function ActivitiesPage() {
@@ -45,6 +47,14 @@ export default function ActivitiesPage() {
       uploadDate: activity.created_at || new Date().toISOString(),
       avenueOfService: activity.avenues?.[0] || "General",
       impactScore: activity.status === 'PUBLISHED' ? 100 : 50,
+      status: activity.removed_by_admin || activity.admin_removed_reason
+        ? "Deleted by Admin"
+        : activity.status === "PUBLISHED"
+          ? "Published"
+          : activity.status === "CANCELLED"
+            ? "Cancelled"
+            : "Draft",
+      adminRemoved: Boolean(activity.removed_by_admin),
     }));
   }, [listResult?.data]);
 
@@ -102,8 +112,14 @@ export default function ActivitiesPage() {
       accessorKey: "impactScore",
       header: "Status",
       cell: ({ row }) => (
-        <span className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
-          Approved
+        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+          row.original.adminRemoved
+            ? "bg-rose-500/10 border border-rose-500/20 text-rose-400"
+            : row.original.status === "Published"
+              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              : "bg-slate-500/10 border border-slate-500/20 text-slate-300"
+        }`}>
+          {row.original.status}
         </span>
       ),
     },
@@ -139,12 +155,16 @@ export default function ActivitiesPage() {
             <button onClick={handleView} className="p-1.5 text-slate-400 hover:text-ocean-glow transition-colors">
               <Eye className="w-4 h-4" />
             </button>
+            {!row.original.adminRemoved && (
+              <>
             <button onClick={handleEdit} className="p-1.5 text-slate-400 hover:text-electric-blue transition-colors">
               <Edit className="w-4 h-4" />
             </button>
             <button onClick={handleDelete} className="p-1.5 text-slate-400 hover:text-red-400 transition-colors">
               <Trash2 className="w-4 h-4" />
             </button>
+              </>
+            )}
           </div>
         );
       },

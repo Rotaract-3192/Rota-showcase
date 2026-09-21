@@ -27,6 +27,7 @@ export interface QueryOptions {
   search?: SearchParams;
   filters?: FilterParams;
   clubIds?: string[];
+  includeAdminRemoved?: boolean;
 }
 
 export interface PaginatedResponse<T> {
