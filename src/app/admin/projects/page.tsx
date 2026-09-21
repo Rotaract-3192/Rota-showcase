@@ -62,6 +62,7 @@ export default function AdminProjectsPage() {
           </select>
           </div>
         </div>
+      </div>
 
       <AdminDataTable<Project>
         title="Project Submissions"

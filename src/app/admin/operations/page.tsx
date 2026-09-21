@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import GlassPanel from "@/components/GlassPanel";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib/zones";
+import { cn } from "@/lib/utils";
 import { 
   Briefcase, 
   Users, 
@@ -184,6 +185,7 @@ export default function AdminOperationsPage() {
           </select>
           </div>
         </div>
+      </div>
 
       {/* Navigation Tabs */}
       <div className="flex border-b border-slate-800/60 gap-2 overflow-x-auto pb-1">

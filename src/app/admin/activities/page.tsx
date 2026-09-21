@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { apiUrl } from "@/lib/api";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib/zones";
+import { AVENUES_OF_SERVICE, activityMatchesAvenue } from "@/lib/avenues";
 import ReportingPeriodSelect from "@/components/admin/ReportingPeriodSelect";
 import { currentMonthPeriod } from "@/lib/reporting-period";
 
