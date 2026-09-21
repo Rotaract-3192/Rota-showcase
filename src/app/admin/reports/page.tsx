@@ -80,16 +80,22 @@ export default function AdminReportsPage() {
       if (!res.ok) throw new Error("Failed to fetch reports");
       const data = await res.json();
 
-      const headers = ["ID", "Title", "Type", "Status", "Club Name", "Start Date", "Venue", "Description"];
+      const headers = ["ID", "Title", "Kind", "Project Type", "Status", "Club Name", "Zone", "Avenues", "Focus Areas", "Start Date", "Venue", "Volunteers", "Volunteer Hours", "Description"];
       const rows = data.map((p: any) => [
         p.id,
         p.title,
         p.type,
+        p.category,
         p.status,
         p.clubName,
+        p.zone,
+        p.avenues,
+        p.focusAreas,
         p.startDate,
         p.venue,
-        p.description.substring(0, 500) + (p.description.length > 500 ? "..." : "")
+        p.volunteers,
+        p.volunteerHours,
+        (p.description || "").substring(0, 500) + ((p.description || "").length > 500 ? "..." : "")
       ]);
 
       if (format === 'csv') {

@@ -55,13 +55,13 @@ export async function GET(req: NextRequest) {
       }
       clubsPath += `&id=in.(${clubIds.join(',')})`;
     }
-    const clubs = await supabaseFetch(clubsPath) || [];
+    const clubs = await supabaseFetch(clubsPath, { headers: { Range: '0-4999' } }) || [];
 
     let activitiesPath = '/activities?select=id,status,created_at,start_time,volunteers,volunteer_hours,beneficiaries,activity_expenses,club_id&deleted_at=is.null';
     if (clubIds && clubIds.length > 0) {
       activitiesPath += `&club_id=in.(${clubIds.join(',')})`;
     }
-    const activities = await supabaseFetch(activitiesPath) || [];
+    const activities = await supabaseFetch(activitiesPath, { headers: { Range: '0-4999' } }) || [];
 
     // Aggregation logic
     const now = new Date();

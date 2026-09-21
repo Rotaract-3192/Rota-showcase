@@ -1,84 +1,60 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import GlassPanel from "@/components/GlassPanel";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from "recharts";
-import { TrendingUp, Users, Building } from "lucide-react";
-import { useStore } from "@/store/useStore";
-import { isDummyZone } from "@/lib/zones";
+import { TrendingUp, Building, Loader2 } from "lucide-react";
+import { useAuthContext } from "@/components/providers/auth-provider";
+import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib/zones";
+import { apiUrl } from "@/lib/api";
 
 const COLORS = ["#00f0ff", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#ef4444", "#14b8a6"];
 
 export default function AdminAnalyticsPage() {
-  const clubs = useStore(state => state.clubs);
-  const projects = useStore(state => state.projects);
+  const { profileData } = useAuthContext();
+  const zrrRole = profileData?.roles.find((r) => r.role === "ZRR");
+  const isSuperAdmin = profileData?.roles.some((r) => isDistrictWideAdminRole(r.role)) ?? false;
+  const userZone = canonicalizeZone(zrrRole?.zone);
+  const [selectedZone, setSelectedZone] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [totals, setTotals] = useState({ reported: 0, published: 0, pending: 0, unspecifiedAvenue: 0 });
+  const [avenueData, setAvenueData] = useState<{ name: string; value: number }[]>([]);
+  const [zoneData, setZoneData] = useState<{ name: string; clubs: number; members: number; projects: number }[]>([]);
 
-  // Compute live zone data
-  const { zoneData, topZone, avgProjects, avgActive } = useMemo(() => {
-    const zoneMap = new Map();
-    let totalMembers = 0;
-    
-    clubs.forEach(club => {
-      const z = club.zone || "Unknown";
-      if (isDummyZone(z)) return;
-      if (!zoneMap.has(z)) {
-        zoneMap.set(z, { name: z, clubs: 0, projects: 0, members: 0 });
-      }
-      const zd = zoneMap.get(z);
-      zd.clubs += 1;
-      zd.projects += club.totalProjects || 0;
-      zd.members += club.memberCount || 0;
-      
-      totalMembers += club.memberCount || 0;
-    });
+  useEffect(() => {
+    if (!isSuperAdmin && userZone) setSelectedZone(userZone);
+  }, [userZone, isSuperAdmin]);
 
-    const computedZoneData = Array.from(zoneMap.values()).map(zData => {
-      const actualProjects = projects.filter(p => p.zone === zData.name).length;
-      return {
-        ...zData,
-        projects: Math.max(zData.projects, actualProjects)
-      };
-    }).sort((a, b) => b.projects - a.projects);
+  useEffect(() => {
+    const filter = !isSuperAdmin && userZone ? userZone : selectedZone;
+    setLoading(true);
+    fetch(apiUrl(`/api/admin/analytics?zone=${encodeURIComponent(filter)}`))
+      .then((res) => res.json())
+      .then((data) => {
+        setTotals(data.totals || { reported: 0, published: 0, pending: 0, unspecifiedAvenue: 0 });
+        setAvenueData(data.avenueData || []);
+        setZoneData(data.zoneData || []);
+      })
+      .catch((err) => console.error("Failed to load analytics:", err))
+      .finally(() => setLoading(false));
+  }, [selectedZone, userZone, isSuperAdmin]);
 
-    const top = computedZoneData.length > 0 ? computedZoneData[0] : { name: "N/A", projects: 0 };
-    
-    const totalProj = computedZoneData.reduce((acc, curr) => acc + curr.projects, 0);
-    const avgProj = clubs.length > 0 ? (totalProj / clubs.length).toFixed(1) : "0";
-    
-    // Mocking avg active members since we don't have historical active data
-    const activeMembers = totalMembers > 0 ? "82% Active" : "N/A";
-
-    return {
-      zoneData: computedZoneData,
-      topZone: top,
-      avgProjects: avgProj,
-      avgActive: activeMembers
-    };
-  }, [clubs, projects]);
-
-  // Compute live avenue data
-  const avenueData = useMemo(() => {
-    const avenueMap = new Map();
-    projects.forEach(p => {
-      const av = p.avenueOfService || "Other";
-      avenueMap.set(av, (avenueMap.get(av) || 0) + 1);
-    });
-    return Array.from(avenueMap.entries())
-      .map(([name, value]) => ({ name, value }))
-      .filter(d => d.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [projects]);
+  const topZone = zoneData[0] || { name: "N/A", projects: 0 };
+  const avgProjects = zoneData.reduce((sum, row) => sum + row.clubs, 0)
+    ? (totals.published / zoneData.reduce((sum, row) => sum + row.clubs, 0)).toFixed(1)
+    : "0";
+  const avenueSum = avenueData.reduce((sum, row) => sum + row.value, 0);
 
   return (
     <div className="flex flex-col gap-6 max-w-[1600px] mx-auto pb-12 animate-fade-in">
@@ -86,101 +62,115 @@ export default function AdminAnalyticsPage() {
         <div>
           <h1 className="font-headline text-3xl font-bold text-white tracking-tight">District Analytics</h1>
           <p className="text-slate-400 text-sm font-body mt-1">
-            Deep-dive visual telemetry for District 3192.
+            Live counts from every reported activity, not a 100-project sample.
           </p>
+        </div>
+        <div className="flex flex-col gap-1.5 min-w-[180px]">
+          <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
+          <select
+            value={!isSuperAdmin && userZone ? userZone : selectedZone}
+            onChange={(e) => setSelectedZone(e.target.value)}
+            disabled={!isSuperAdmin && !!userZone}
+            className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none disabled:opacity-60"
+          >
+            {isSuperAdmin && <option value="All">All Zones</option>}
+            {DISTRICT_ZONES.map((zone) => (
+              <option key={zone} value={zone}>{zone}</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Analytics Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40 flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Top Performing Zone</span>
-            <span className="text-xl font-headline font-bold text-white">{topZone.name} ({topZone.projects} Projects)</span>
+      {loading ? (
+        <div className="p-16 text-center text-electric-blue font-metadata text-xs uppercase tracking-widest">
+          <Loader2 className="w-5 h-5 animate-spin inline mr-2" /> Loading analytics...
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40">
+              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Reported projects</span>
+              <p className="text-xl font-headline font-bold text-white mt-1">{totals.reported}</p>
+              <p className="text-[10px] text-slate-500 mt-1">All submissions, including drafts</p>
+            </GlassPanel>
+            <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40">
+              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Published projects</span>
+              <p className="text-xl font-headline font-bold text-white mt-1">{totals.published}</p>
+              <p className="text-[10px] text-slate-500 mt-1">Avenue chart uses this total</p>
+            </GlassPanel>
+            <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Top zone</span>
+                <p className="text-xl font-headline font-bold text-white mt-1">{topZone.name} ({topZone.projects})</p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-electric-blue opacity-30" />
+            </GlassPanel>
+            <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Avg. published / club</span>
+                <p className="text-xl font-headline font-bold text-white mt-1">{avgProjects}</p>
+              </div>
+              <Building className="w-8 h-8 text-emerald-400 opacity-30" />
+            </GlassPanel>
           </div>
-          <TrendingUp className="w-8 h-8 text-electric-blue opacity-30" />
-        </GlassPanel>
-        <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40 flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Avg. Projects per Club</span>
-            <span className="text-xl font-headline font-bold text-white">{avgProjects} Projects</span>
-          </div>
-          <Building className="w-8 h-8 text-emerald-400 opacity-30" />
-        </GlassPanel>
-        <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40 flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Avg. Member Engagement</span>
-            <span className="text-xl font-headline font-bold text-white">{avgActive}</span>
-          </div>
-          <Users className="w-8 h-8 text-amber-400 opacity-30" />
-        </GlassPanel>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Zone Performance Chart */}
-        <GlassPanel className="p-6 border-slate-800/60 bg-navy-dark/40 flex flex-col gap-6">
-          <div>
-            <h3 className="font-headline text-lg font-bold text-white">Zone-wise Metrics</h3>
-            <p className="text-xs text-slate-400 font-metadata mt-1">Clubs, Projects, and Members across zones</p>
-          </div>
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={zoneData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0b1120', borderColor: '#1e293b', borderRadius: '8px' }}
-                  labelStyle={{ fontSize: '10px', color: '#64748b' }}
-                />
-                <Bar dataKey="projects" fill="#00f0ff" radius={[4, 4, 0, 0]} name="Projects" />
-                <Bar dataKey="members" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Members" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassPanel>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <GlassPanel className="p-6 border-slate-800/60 bg-navy-dark/40 flex flex-col gap-6">
+              <div>
+                <h3 className="font-headline text-lg font-bold text-white">Zone-wise Metrics</h3>
+                <p className="text-xs text-slate-400 font-metadata mt-1">Published projects counted from activities, not club.total_projects</p>
+              </div>
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={zoneData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
+                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: "#0b1120", borderColor: "#1e293b", borderRadius: "8px" }} />
+                    <Bar dataKey="projects" fill="#00f0ff" radius={[4, 4, 0, 0]} name="Published projects" />
+                    <Bar dataKey="members" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Members" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </GlassPanel>
 
-        {/* Avenue of Service Share */}
-        <GlassPanel className="p-6 border-slate-800/60 bg-navy-dark/40 flex flex-col gap-6">
-          <div>
-            <h3 className="font-headline text-lg font-bold text-white">Avenues of Service</h3>
-            <p className="text-xs text-slate-400 font-metadata mt-1">Distribution of district projects</p>
-          </div>
-          <div className="h-80 w-full flex flex-col sm:flex-row items-center justify-center gap-6">
-            <div className="h-64 w-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={avenueData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {avenueData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#0b1120', borderColor: '#1e293b', borderRadius: '8px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              {avenueData.map((entry, index) => (
-                <div key={entry.name} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                  <span className="text-xs text-slate-300 font-body">{entry.name} ({entry.value})</span>
+            <GlassPanel className="p-6 border-slate-800/60 bg-navy-dark/40 flex flex-col gap-6">
+              <div>
+                <h3 className="font-headline text-lg font-bold text-white">Avenues of Service</h3>
+                <p className="text-xs text-slate-400 font-metadata mt-1">
+                  {avenueSum} published projects by primary avenue
+                  {totals.unspecifiedAvenue ? ` · ${totals.unspecifiedAvenue} have no avenue tagged` : ""}
+                </p>
+              </div>
+              <div className="h-80 w-full flex flex-col sm:flex-row items-center justify-center gap-6">
+                <div className="h-64 w-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={avenueData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={4} dataKey="value">
+                        {avenueData.map((entry, index) => (
+                          <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: "#0b1120", borderColor: "#1e293b", borderRadius: "8px" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
-            </div>
+                <div className="flex flex-col gap-2">
+                  {avenueData.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                      <span className="text-xs text-slate-300 font-body">{entry.name} ({entry.value})</span>
+                    </div>
+                  ))}
+                  {avenueData.length === 0 && (
+                    <span className="text-xs text-slate-500">No published projects in this filter.</span>
+                  )}
+                </div>
+              </div>
+            </GlassPanel>
           </div>
-        </GlassPanel>
-      </div>
+        </>
+      )}
     </div>
   );
 }

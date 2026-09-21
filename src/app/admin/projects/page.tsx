@@ -5,11 +5,12 @@ import AdminDataTable from "@/components/admin/AdminDataTable";
 import GlassPanel from "@/components/GlassPanel";
 import { useStore, Project } from "@/store/useStore";
 import { Layers, CheckCircle, XCircle, Eye, X, Calendar, Clock, Heart, DollarSign, Award } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { AVENUES_OF_SERVICE, activityMatchesAvenue } from "@/lib/avenues";
 
 export default function AdminProjectsPage() {
   const projects = useStore((state) => state.projects);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedAvenue, setSelectedAvenue] = useState("All");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -19,8 +20,9 @@ export default function AdminProjectsPage() {
   };
 
   const filteredProjects = projects.filter(project => 
-    project.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    project.clubName.toLowerCase().includes(searchTerm.toLowerCase())
+    (project.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    project.clubName.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (selectedAvenue === "All" || project.avenueOfService === selectedAvenue || activityMatchesAvenue([project.avenueOfService], selectedAvenue))
   );
 
   return (
@@ -39,6 +41,19 @@ export default function AdminProjectsPage() {
           <p className="text-slate-400 text-sm font-body mt-1">
             Review, feature, and moderate all projects submitted across the district.
           </p>
+        </div>
+        <div className="flex flex-col gap-1.5 min-w-[180px]">
+          <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Avenue</label>
+          <select
+            value={selectedAvenue}
+            onChange={(e) => setSelectedAvenue(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none"
+          >
+            <option value="All">All Avenues</option>
+            {AVENUES_OF_SERVICE.map((avenue) => (
+              <option key={avenue} value={avenue}>{avenue}</option>
+            ))}
+          </select>
         </div>
       </div>
 

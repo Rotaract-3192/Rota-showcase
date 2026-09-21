@@ -87,16 +87,24 @@ export async function GET(req: NextRequest) {
     
     if (type === 'projects') {
       // Fetch all activities along with their club names
-      const activities = await supabaseFetch('/activities?select=id,title,status,created_at,type,start_time,description,venue,clubs(name)&deleted_at=is.null');
+      const activities = await supabaseFetch('/activities?select=id,title,status,created_at,type,activity_category,start_time,description,venue,avenues,focus_areas,volunteers,volunteer_hours,clubs(name,zone)&deleted_at=is.null', {
+        headers: { Range: '0-4999', Prefer: 'count=exact' },
+      });
       
       const result = (activities || []).map((a: any) => ({
         id: a.id,
         title: a.title,
         type: a.type || 'N/A',
+        category: a.activity_category || 'N/A',
         status: a.status || 'DRAFT',
         clubName: a.clubs?.name || 'Independent Member',
+        zone: a.clubs?.zone || 'Unassigned',
+        avenues: Array.isArray(a.avenues) ? a.avenues.join('; ') : '',
+        focusAreas: Array.isArray(a.focus_areas) ? a.focus_areas.join('; ') : '',
         startDate: a.start_time || 'N/A',
         venue: a.venue || 'N/A',
+        volunteers: a.volunteers || 0,
+        volunteerHours: a.volunteer_hours || 0,
         description: a.description || ''
       }));
 

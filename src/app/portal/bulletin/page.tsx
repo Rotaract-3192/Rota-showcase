@@ -22,17 +22,31 @@ export default function BulletinUploadPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !title || !month) return;
-    
+
     setIsSubmitting(true);
-    
-    // Simulate upload delay
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadData });
+      const uploadJson = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadJson.error || "Failed to upload PDF");
+
+      const saveRes = await fetch("/api/portal/bulletins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, edition: month, fileUrl: uploadJson.url }),
+      });
+      const saveJson = await saveRes.json();
+      if (!saveRes.ok) throw new Error(saveJson.error || "Failed to submit bulletin");
       setIsSuccess(true);
-    }, 1500);
+    } catch (err: any) {
+      alert(err.message || "Failed to submit bulletin.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSuccess) {

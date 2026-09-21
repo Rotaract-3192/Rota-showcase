@@ -31,7 +31,7 @@ export function StoreInitializer() {
           setClubs(mappedClubs);
 
           // 2. Fetch Projects after Clubs to map Zone correctly
-          fetch('/api/activities?pageSize=100')
+          fetch('/api/activities?pageSize=2000')
             .then((res) => res.json())
             .then((data) => {
               const activitiesList = data.data || [];

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { apiUrl } from "@/lib/api";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib/zones";
+import { AVENUES_OF_SERVICE, activityMatchesAvenue } from "@/lib/avenues";
 
 interface Activity {
   id: string;
@@ -44,6 +45,7 @@ export default function AdminActivitiesPage() {
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [selectedZone, setSelectedZone] = useState<string>("All");
+  const [selectedAvenue, setSelectedAvenue] = useState<string>("All");
 
   // Set default zone if user is ZRR
   useEffect(() => {
@@ -185,15 +187,19 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
   };
 
   const exportActivities = async (format: 'csv' | 'pdf' = 'csv') => {
-    const headers = ["ID", "Title", "Club", "Type", "Date", "Venue", "Status", "Description"];
+    const headers = ["ID", "Title", "Club", "Project Type", "Avenues", "Focus Areas", "Date", "Venue", "Status", "Volunteers", "Volunteer Hours", "Description"];
     const rows = filteredActivities.map(act => [
       act.id,
       act.title,
       act.club,
-      act.type,
+      act.activityCategory,
+      (act.avenues || []).join("; "),
+      (act.focusAreas || []).join("; "),
       act.date,
       act.venue,
       act.status,
+      act.volunteers || 0,
+      act.volunteerHours || 0,
       act.description.substring(0, 500) + (act.description.length > 500 ? "..." : "")
     ]);
 
@@ -231,7 +237,8 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
 
   const filteredActivities = activities.filter(act => 
     (act.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-     act.club.toLowerCase().includes(searchTerm.toLowerCase()))
+     act.club.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    activityMatchesAvenue(act.avenues, selectedAvenue)
   );
 
   return (
@@ -244,6 +251,7 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
           </p>
         </div>
 
+        <div className="flex flex-col sm:flex-row gap-3">
         {/* Zone Filter Dropdown */}
         <div className="flex flex-col gap-1.5 min-w-[180px]">
           <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
@@ -258,6 +266,20 @@ Generated via Command Center Admin Panel on: ${new Date().toLocaleString()}
               <option key={zone} value={zone}>{zone}</option>
             ))}
           </select>
+        </div>
+        <div className="flex flex-col gap-1.5 min-w-[180px]">
+          <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Avenue</label>
+          <select
+            value={selectedAvenue}
+            onChange={(e) => setSelectedAvenue(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none"
+          >
+            <option value="All">All Avenues</option>
+            {AVENUES_OF_SERVICE.map((avenue) => (
+              <option key={avenue} value={avenue}>{avenue}</option>
+            ))}
+          </select>
+        </div>
         </div>
       </div>
 

@@ -36,13 +36,15 @@ export async function GET(req: NextRequest) {
     const { filterZone } = await resolveAdminZoneFilter(searchParams.get('zone'));
     const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
 
-    let path = '/activities?select=id,title,status,created_at,type,activity_category,start_time,description,venue,cover_image,supporting_image_1,supporting_image_2,beneficiaries,volunteer_hours,activity_expenses,volunteers,avenues,focus_areas,clubs!inner(name,zone)&deleted_at=is.null';
+    let path = '/activities?select=id,title,status,created_at,type,activity_category,start_time,description,venue,cover_image,supporting_image_1,supporting_image_2,beneficiaries,volunteer_hours,activity_expenses,volunteers,avenues,focus_areas,submit_for_publication,clubs!inner(name,zone)&deleted_at=is.null';
     if (clubIds) {
       if (clubIds.length === 0) return NextResponse.json([]);
       path += `&club_id=in.(${clubIds.join(',')})`;
     }
 
-    const data = await supabaseFetch(path);
+    const data = await supabaseFetch(path, {
+      headers: { Range: '0-4999', Prefer: 'count=exact' },
+    });
     if (!Array.isArray(data) || data.length === 0) {
       return NextResponse.json(data || []);
     }
