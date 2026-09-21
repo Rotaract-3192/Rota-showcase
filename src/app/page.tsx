@@ -77,6 +77,7 @@ export default function HomePage() {
     areaOfFocus: act.focus_areas?.[0] || 'Education & Literacy',
     impactScore: 90,
     uploadDate: act.created_at || new Date().toISOString(),
+    projectDate: act.start_time || act.created_at || new Date().toISOString(),
     location: act.venue || 'N/A',
     zone: act.clubs?.zone || '1',
     contributions: (() => {

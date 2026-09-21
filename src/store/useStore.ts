@@ -25,7 +25,8 @@ export interface Project {
   beneficiaries: number;
   volunteerHours: number;
   impactScore: number; // 1-100
-  uploadDate: string; // ISO String
+  uploadDate: string; // ISO String — when the report was submitted
+  projectDate: string; // ISO String — actual project / activity start date
   description: string;
   location: string;
   zone: string;
@@ -143,6 +144,7 @@ const mockProjects: Project[] = [
     beneficiaries: 12000,
     volunteerHours: 350,
     impactScore: 98,
+    projectDate: "2026-01-15T08:00:00Z",
     uploadDate: "2026-01-15T08:00:00Z",
     description: "Project Jal Dhara involved installing low-cost, gravity-fed water purifiers in five drought-prone villages around District 3192. These filtration setups provide safe, chemical-free drinking water, resolving long-standing waterborne disease issues. Rotaract volunteers conducted training seminars on hygiene and filter maintenance to ensure long-term community ownership.",
     location: "Kanakapura Rural, Karnataka",
@@ -161,6 +163,7 @@ const mockProjects: Project[] = [
     beneficiaries: 3500,
     volunteerHours: 520,
     impactScore: 92,
+    projectDate: "2026-02-10T12:00:00Z",
     uploadDate: "2026-02-10T12:00:00Z",
     description: "Recognizing the post-pandemic mental health crisis among students, Project Shanti established a network of trained peer counselors across 12 colleges. Collaborating with certified psychologists, our volunteers organized offline workshops, interactive listening booths, and launched a 24/7 anonymous support line.",
     location: "Bengaluru Urban, Karnataka",
@@ -179,6 +182,7 @@ const mockProjects: Project[] = [
     beneficiaries: 8500,
     volunteerHours: 780,
     impactScore: 96,
+    projectDate: "2026-01-05T09:00:00Z",
     uploadDate: "2026-01-05T09:00:00Z",
     description: "An institution-wide collection drive and technical refurbishment initiative. RVCE Rotaract volunteers collected 60+ decommissioned desktop systems, refurbished them, loaded open-source educational software, and installed fully operational computer labs in three rural government primary schools.",
     location: "Channapatna Taluk, Karnataka",
@@ -197,6 +201,7 @@ const mockProjects: Project[] = [
     beneficiaries: 25000,
     volunteerHours: 900,
     impactScore: 95,
+    projectDate: "2026-03-20T10:00:00Z",
     uploadDate: "2026-03-20T10:00:00Z",
     description: "In response to urban lake degradation, Rotaractors joined hands with local environmentalists to restore an offset channel. The campaign involved floating reed islands (bio-mimicry filtration), waste cleanups, and creating a protective bund lined with indigenous saplings to restore local bird biodiversity.",
     location: "Kengeri Suburban, Karnataka",
@@ -215,6 +220,7 @@ const mockProjects: Project[] = [
     beneficiaries: 6000,
     volunteerHours: 400,
     impactScore: 92,
+    projectDate: "2026-02-15T14:30:00Z",
     uploadDate: "2026-02-15T14:30:00Z",
     description: "A comprehensive health drive that distributed informational booklets, conducted 10 rural health camps with certified gynecologists, and sponsored HPV vaccines for 50 young girls from low-income households.",
     location: "Kolar, Karnataka",
@@ -233,6 +239,7 @@ const mockProjects: Project[] = [
     beneficiaries: 1800,
     volunteerHours: 450,
     impactScore: 89,
+    projectDate: "2026-04-01T11:00:00Z",
     uploadDate: "2026-04-01T11:00:00Z",
     description: "Project Ignite hosted a 3-week startup incubator for aspiring entrepreneurs from municipal colleges. It featured mentorship sessions by venture capitalists, business modeling workshops, and a final pitch day where three teams received seed funding of INR 50,000 each.",
     location: "Jayanagar, Bengaluru",
@@ -251,6 +258,7 @@ const mockProjects: Project[] = [
     beneficiaries: 500,
     volunteerHours: 250,
     impactScore: 88,
+    projectDate: "2026-04-18T16:00:00Z",
     uploadDate: "2026-04-18T16:00:00Z",
     description: "A digital international collaboration with the Rotaract Club of Munich. The virtual summit focused on UN Sustainable Development Goals, cultural presentations, and joint fund-raising for an environmental project in East Africa.",
     location: "Online / Munich Hub",
@@ -269,6 +277,7 @@ const mockProjects: Project[] = [
     beneficiaries: 4000,
     volunteerHours: 180,
     impactScore: 98,
+    projectDate: "2026-02-01T08:00:00Z",
     uploadDate: "2026-02-01T08:00:00Z", // Equal impactScore as Project 1 (98), uploaded later (Feb 1st vs Jan 15th)
     description: "Fundraising and deployment of state-of-the-art neonatal phototherapy units and incubators for a community healthcare clinic in Ramnagaram, directly assisting critical newborn child recovery.",
     location: "Ramanagara District, Karnataka",
@@ -287,6 +296,7 @@ const mockProjects: Project[] = [
     beneficiaries: 1200,
     volunteerHours: 360,
     impactScore: 90,
+    projectDate: "2026-05-02T13:00:00Z",
     uploadDate: "2026-05-02T13:00:00Z",
     description: "Creating sewing, block printing, and e-commerce listing skill labs for 80 village women in rural Tumakuru to help establish independent micro-entrepreneurship guilds.",
     location: "Tumakuru Rural, Karnataka",
@@ -305,6 +315,7 @@ const mockProjects: Project[] = [
     beneficiaries: 15000,
     volunteerHours: 680,
     impactScore: 94,
+    projectDate: "2026-03-10T07:30:00Z",
     uploadDate: "2026-03-10T07:30:00Z",
     description: "Organized across three main university campuses, this mega blood drive collected 1,240 units of blood in a single day in partnership with the Red Cross, creating vital resources for three municipal blood banks.",
     location: "PES Campus, Bengaluru",

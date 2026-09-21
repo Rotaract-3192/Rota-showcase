@@ -26,7 +26,7 @@ export default function AdminProjectsPage() {
     (project.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     project.clubName.toLowerCase().includes(searchTerm.toLowerCase())) &&
     (selectedAvenue === "All" || project.avenueOfService === selectedAvenue || activityMatchesAvenue([project.avenueOfService], selectedAvenue)) &&
-    inPeriod(project.uploadDate, periodRange(selectedPeriod))
+    inPeriod(project.projectDate, periodRange(selectedPeriod))
   );
 
   return (

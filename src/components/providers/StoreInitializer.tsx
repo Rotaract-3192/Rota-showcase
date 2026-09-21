@@ -50,6 +50,7 @@ export function StoreInitializer() {
                     volunteerHours: p.volunteer_hours || 0,
                     impactScore: p.feature_activity ? 95 : 70,
                     uploadDate: p.created_at || new Date().toISOString(),
+                    projectDate: p.start_time || p.created_at || new Date().toISOString(),
                     description: p.description,
                     location: p.venue || "District 3192",
                     zone: club ? club.zone : "Unassigned",
