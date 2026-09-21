@@ -126,7 +126,6 @@ export default function BulletinUploadPage() {
                 className="w-full px-4 py-3 rounded-lg bg-navy-deep border border-slate-800 focus:border-electric-blue/40 text-sm text-slate-200 focus:outline-none transition-all"
               >
                 <option value="" disabled>Select Month...</option>
-                <option value="June 2026">June 2026</option>
                 <option value="July 2026">July 2026</option>
                 <option value="August 2026">August 2026</option>
                 <option value="September 2026">September 2026</option>
@@ -138,6 +137,7 @@ export default function BulletinUploadPage() {
                 <option value="March 2027">March 2027</option>
                 <option value="April 2027">April 2027</option>
                 <option value="May 2027">May 2027</option>
+                <option value="June 2027">June 2027</option>
               </select>
             </div>
           </div>

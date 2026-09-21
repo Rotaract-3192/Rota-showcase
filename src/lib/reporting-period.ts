@@ -1,9 +1,10 @@
-/** Rotary reporting year: June through May. */
+/** Rotary reporting year: July through June (next year). */
 
 export type PeriodOption = { value: string; label: string };
 
 export function rotaryYearStartYear(now = new Date()): number {
-  return now.getMonth() >= 5 ? now.getFullYear() : now.getFullYear() - 1;
+  // July = month index 6. Before July, the open Rotary year started last calendar year.
+  return now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
 }
 
 export function currentMonthPeriod(now = new Date()): string {
@@ -14,7 +15,7 @@ export function periodOptions(now = new Date()): PeriodOption[] {
   const startYear = rotaryYearStartYear(now);
   const months: PeriodOption[] = [];
   for (let i = 0; i < 12; i++) {
-    const date = new Date(startYear, 5 + i, 1);
+    const date = new Date(startYear, 6 + i, 1);
     const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     months.push({
       value,
@@ -24,7 +25,7 @@ export function periodOptions(now = new Date()): PeriodOption[] {
   return [
     {
       value: "ry",
-      label: `All year (June ${startYear} – May ${startYear + 1})`,
+      label: `All year (July ${startYear} – June ${startYear + 1})`,
     },
     ...months,
   ];
@@ -35,8 +36,8 @@ export function periodRange(value: string | null | undefined, now = new Date()):
   if (value === "ry") {
     const y = rotaryYearStartYear(now);
     return {
-      start: new Date(Date.UTC(y, 5, 1)).toISOString(),
-      end: new Date(Date.UTC(y + 1, 5, 1)).toISOString(),
+      start: new Date(Date.UTC(y, 6, 1)).toISOString(),
+      end: new Date(Date.UTC(y + 1, 6, 1)).toISOString(),
     };
   }
   const match = /^(\d{4})-(\d{2})$/.exec(value);
@@ -52,6 +53,13 @@ export function periodRange(value: string | null | undefined, now = new Date()):
 
 export function periodLabel(value: string, now = new Date()): string {
   return periodOptions(now).find((option) => option.value === value)?.label || value;
+}
+
+export function inPeriod(iso: string | null | undefined, range: { start: string; end: string } | null): boolean {
+  if (!range) return true;
+  if (!iso) return false;
+  const time = new Date(iso).getTime();
+  return time >= new Date(range.start).getTime() && time < new Date(range.end).getTime();
 }
 
 export function restTimeFilter(column: string, range: { start: string; end: string } | null): string {

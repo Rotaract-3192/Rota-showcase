@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateSupabaseJWT } from "@/lib/jwt";
 import { clubIdsInZone, jsonAuthzError, resolveAdminZoneFilter } from "@/lib/portal-auth";
-import { activityAvenues } from "@/lib/avenues";
+import { activityAvenues, activityMatchesAvenue } from "@/lib/avenues";
 import { canonicalizeZone, isDummyZone } from "@/lib/zones";
 import { periodRange, restTimeFilter } from "@/lib/reporting-period";
 
@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const { filterZone } = await resolveAdminZoneFilter(searchParams.get("zone"));
     const range = periodRange(searchParams.get("period") || "ry");
+    const avenueFilter = searchParams.get("avenue") || "All";
     const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
 
     let clubsPath = "/clubs?select=id,name,zone,member_count,total_projects&deleted_at=is.null";
@@ -77,7 +78,10 @@ export async function GET(req: NextRequest) {
       activitiesPath += `&${clubFilter}`;
     }
 
-    const [clubs, activities] = await Promise.all([fetchAll(clubsPath), fetchAll(activitiesPath)]);
+    const [clubs, rawActivities] = await Promise.all([fetchAll(clubsPath), fetchAll(activitiesPath)]);
+    const activities = (rawActivities || []).filter((act: any) =>
+      activityMatchesAvenue(act.avenues, avenueFilter)
+    );
 
     const published = activities.filter((act: any) => act.status === "PUBLISHED");
     const pending = activities.filter((act: any) =>

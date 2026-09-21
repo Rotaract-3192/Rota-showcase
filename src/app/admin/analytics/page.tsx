@@ -17,6 +17,7 @@ import {
 import { TrendingUp, Building, Loader2, Users, HeartHandshake, CircleDollarSign, ClipboardCheck } from "lucide-react";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib/zones";
+import { AVENUES_OF_SERVICE } from "@/lib/avenues";
 import { apiUrl } from "@/lib/api";
 import ReportingPeriodSelect from "@/components/admin/ReportingPeriodSelect";
 
@@ -29,6 +30,7 @@ export default function AdminAnalyticsPage() {
   const userZone = canonicalizeZone(zrrRole?.zone);
   const [selectedZone, setSelectedZone] = useState("All");
   const [selectedPeriod, setSelectedPeriod] = useState("ry");
+  const [selectedAvenue, setSelectedAvenue] = useState("All");
   const [loading, setLoading] = useState(true);
   const [totals, setTotals] = useState({
     reported: 0,
@@ -51,7 +53,11 @@ export default function AdminAnalyticsPage() {
   useEffect(() => {
     const filter = !isSuperAdmin && userZone ? userZone : selectedZone;
     setLoading(true);
-    fetch(apiUrl(`/api/admin/analytics?zone=${encodeURIComponent(filter)}&period=${encodeURIComponent(selectedPeriod)}`))
+    fetch(
+      apiUrl(
+        `/api/admin/analytics?zone=${encodeURIComponent(filter)}&period=${encodeURIComponent(selectedPeriod)}&avenue=${encodeURIComponent(selectedAvenue)}`
+      )
+    )
       .then((res) => res.json())
       .then((data) => {
         setTotals(data.totals || {
@@ -63,7 +69,7 @@ export default function AdminAnalyticsPage() {
       })
       .catch((err) => console.error("Failed to load analytics:", err))
       .finally(() => setLoading(false));
-  }, [selectedZone, selectedPeriod, userZone, isSuperAdmin]);
+  }, [selectedZone, selectedPeriod, selectedAvenue, userZone, isSuperAdmin]);
 
   const topZone = zoneData[0] || { name: "N/A", projects: 0 };
   const avgProjects = zoneData.reduce((sum, row) => sum + row.clubs, 0)
@@ -80,21 +86,34 @@ export default function AdminAnalyticsPage() {
             Live counts from every reported activity, not a 100-project sample.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 flex-wrap justify-end">
           <ReportingPeriodSelect value={selectedPeriod} onChange={setSelectedPeriod} />
           <div className="flex flex-col gap-1.5 min-w-[180px]">
-          <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
-          <select
-            value={!isSuperAdmin && userZone ? userZone : selectedZone}
-            onChange={(e) => setSelectedZone(e.target.value)}
-            disabled={!isSuperAdmin && !!userZone}
-            className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none disabled:opacity-60"
-          >
-            {isSuperAdmin && <option value="All">All Zones</option>}
-            {DISTRICT_ZONES.map((zone) => (
-              <option key={zone} value={zone}>{zone}</option>
-            ))}
-          </select>
+            <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Zone</label>
+            <select
+              value={!isSuperAdmin && userZone ? userZone : selectedZone}
+              onChange={(e) => setSelectedZone(e.target.value)}
+              disabled={!isSuperAdmin && !!userZone}
+              className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none disabled:opacity-60"
+            >
+              {isSuperAdmin && <option value="All">All Zones</option>}
+              {DISTRICT_ZONES.map((zone) => (
+                <option key={zone} value={zone}>{zone}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5 min-w-[180px]">
+            <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Filter by Avenue</label>
+            <select
+              value={selectedAvenue}
+              onChange={(e) => setSelectedAvenue(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none"
+            >
+              <option value="All">All Avenues</option>
+              {AVENUES_OF_SERVICE.map((avenue) => (
+                <option key={avenue} value={avenue}>{avenue}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
