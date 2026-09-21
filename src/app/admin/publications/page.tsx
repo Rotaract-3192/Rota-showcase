@@ -27,6 +27,7 @@ interface Bulletin {
 export default function AdminPublicationsPage() {
   const [requests, setRequests] = useState<PublicationRequest[]>([]);
   const [bulletins, setBulletins] = useState<Bulletin[]>([]);
+  const [bulletinsError, setBulletinsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -64,6 +65,9 @@ export default function AdminPublicationsPage() {
               date: row.created_at,
             }))
           );
+        } else {
+          const err = await bulletinsRes.json().catch(() => ({}));
+          setBulletinsError(err.error || `Could not load club bulletins (${bulletinsRes.status}).`);
         }
       } catch (err) {
         console.error("Failed to load publications:", err);
@@ -83,7 +87,7 @@ export default function AdminPublicationsPage() {
       <div>
         <h1 className="font-headline text-3xl font-bold text-white tracking-tight">Publications & Bulletins</h1>
         <p className="text-slate-400 text-sm font-body mt-1">
-          Club activities marked for district publication, plus monthly bulletins uploaded from the club portal.
+          Monthly club bulletin PDFs from Portal → Bulletin. Activity PR requests are listed separately below.
         </p>
       </div>
 
@@ -93,9 +97,45 @@ export default function AdminPublicationsPage() {
         </div>
       ) : (
         <>
+          <GlassPanel className="p-0 border-slate-800/60 bg-navy-dark/40 overflow-hidden">
+            <div className="p-5 border-b border-slate-800/60">
+              <h3 className="font-headline text-lg font-bold text-white flex items-center gap-2">
+                <FileText className="w-5 h-5 text-electric-blue" />
+                Club bulletins
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">PDF newsletters uploaded by clubs. This is what DRS reviews.</p>
+            </div>
+            {bulletinsError ? (
+              <div className="p-8 text-sm text-red-400">{bulletinsError}</div>
+            ) : bulletins.length === 0 ? (
+              <div className="p-8 text-sm text-slate-500">No club bulletin PDFs have been submitted yet.</div>
+            ) : (
+              <div className="divide-y divide-slate-800/40">
+                {bulletins.map((item) => (
+                  <div key={item.id} className="p-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-white">{item.title}</p>
+                      <p className="text-[10px] text-slate-500">
+                        {item.club} · {item.edition}
+                        {item.date ? ` · ${new Date(item.date).toLocaleDateString("en-IN")}` : ""}
+                      </p>
+                    </div>
+                    {item.fileUrl ? (
+                      <a href={item.fileUrl} target="_blank" rel="noreferrer" className="text-electric-blue text-xs font-bold flex items-center gap-1">
+                        Open PDF <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <span className="text-xs text-slate-500">No file</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </GlassPanel>
+
           <AdminDataTable<PublicationRequest>
-            title="Publication requests"
-            description="Activities where the club ticked “Submit for District Publication”."
+            title="Social / PR publication requests"
+            description="These are projects, not bulletins. Clubs ticked “Submit for District Publication” on an activity report."
             data={filteredRequests}
             searchPlaceholder="Search title or club..."
             onSearch={setSearchTerm}
@@ -113,37 +153,6 @@ export default function AdminPublicationsPage() {
               { header: "Status", accessorKey: "status", className: "text-xs text-slate-300" },
             ]}
           />
-
-          <GlassPanel className="p-0 border-slate-800/60 bg-navy-dark/40 overflow-hidden">
-            <div className="p-5 border-b border-slate-800/60">
-              <h3 className="font-headline text-lg font-bold text-white flex items-center gap-2">
-                <FileText className="w-5 h-5 text-electric-blue" />
-                Club bulletins
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">PDFs uploaded from Portal → Bulletin.</p>
-            </div>
-            {bulletins.length === 0 ? (
-              <div className="p-8 text-sm text-slate-500">No club bulletins yet.</div>
-            ) : (
-              <div className="divide-y divide-slate-800/40">
-                {bulletins.map((item) => (
-                  <div key={item.id} className="p-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-bold text-white">{item.title}</p>
-                      <p className="text-[10px] text-slate-500">{item.club} · {item.edition}</p>
-                    </div>
-                    {item.fileUrl ? (
-                      <a href={item.fileUrl} target="_blank" rel="noreferrer" className="text-electric-blue text-xs font-bold flex items-center gap-1">
-                        Open PDF <ExternalLink className="w-3 h-3" />
-                      </a>
-                    ) : (
-                      <span className="text-xs text-slate-500">No file</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </GlassPanel>
         </>
       )}
     </div>
