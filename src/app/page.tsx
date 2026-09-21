@@ -79,7 +79,12 @@ export default function HomePage() {
     uploadDate: act.created_at || new Date().toISOString(),
     location: act.venue || 'N/A',
     zone: act.clubs?.zone || '1',
-    contributions: (act.cash_contribution || 0) + (act.in_kind_contribution || 0),
+    contributions: (() => {
+      const cash = Number(act.cash_contribution) || 0;
+      const inKind = Number(act.in_kind_contribution) || 0;
+      const expenses = Number(act.activity_expenses) || 0;
+      return cash + inKind > 0 ? cash + inKind : expenses;
+    })(),
     volunteerCount: act.volunteers || 0
   }));
 

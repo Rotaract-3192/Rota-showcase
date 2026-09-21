@@ -585,6 +585,8 @@ export default function ReportActivityPage() {
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-1.5">
               <PhotoUploadGroup
+                key={editId || "new-report"}
+                initialImages={uploadedUrls}
                 onImagesChange={(urls) => setUploadedUrls(urls)}
                 required={true}
               />

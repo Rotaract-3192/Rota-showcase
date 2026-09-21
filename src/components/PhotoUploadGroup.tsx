@@ -3,25 +3,30 @@
 import React, { useState } from "react";
 import { UploadCloud, Loader2, X, Image as ImageIcon } from "lucide-react";
 
+type ImageSlot = {
+  coverImage: string | null;
+  supportingImage1: string | null;
+  supportingImage2: string | null;
+};
+
 interface PhotoUploadGroupProps {
-  onImagesChange: (urls: {
-    coverImage: string | null;
-    supportingImage1: string | null;
-    supportingImage2: string | null;
-  }) => void;
+  onImagesChange: (urls: ImageSlot) => void;
+  initialImages?: ImageSlot;
   required?: boolean;
 }
 
-export default function PhotoUploadGroup({ onImagesChange, required = true }: PhotoUploadGroupProps) {
-  const [images, setImages] = useState<{
-    coverImage: string | null;
-    supportingImage1: string | null;
-    supportingImage2: string | null;
-  }>({
-    coverImage: null,
-    supportingImage1: null,
-    supportingImage2: null,
-  });
+const EMPTY_IMAGES: ImageSlot = {
+  coverImage: null,
+  supportingImage1: null,
+  supportingImage2: null,
+};
+
+export default function PhotoUploadGroup({
+  onImagesChange,
+  initialImages,
+  required = true,
+}: PhotoUploadGroupProps) {
+  const [images, setImages] = useState<ImageSlot>(initialImages || EMPTY_IMAGES);
 
   const [loadingStates, setLoadingStates] = useState<{
     coverImage: boolean;
@@ -42,6 +47,22 @@ export default function PhotoUploadGroup({ onImagesChange, required = true }: Ph
     supportingImage1: null,
     supportingImage2: null,
   });
+
+  React.useEffect(() => {
+    if (!initialImages) return;
+    if (!initialImages.coverImage && !initialImages.supportingImage1 && !initialImages.supportingImage2) {
+      return;
+    }
+    setImages(initialImages);
+  }, [initialImages?.coverImage, initialImages?.supportingImage1, initialImages?.supportingImage2]);
+
+  const commitImages = (updater: (prev: ImageSlot) => ImageSlot) => {
+    setImages((prev) => {
+      const next = updater(prev);
+      onImagesChange(next);
+      return next;
+    });
+  };
 
   const handleUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -78,9 +99,7 @@ export default function PhotoUploadGroup({ onImagesChange, required = true }: Ph
       }
 
       const data = await res.json();
-      const updatedImages = { ...images, [key]: data.url };
-      setImages(updatedImages);
-      onImagesChange(updatedImages);
+      commitImages((prev) => ({ ...prev, [key]: data.url }));
     } catch (err: any) {
       setErrors((prev) => ({ ...prev, [key]: err.message || "Failed to upload image." }));
     } finally {
@@ -90,9 +109,7 @@ export default function PhotoUploadGroup({ onImagesChange, required = true }: Ph
   };
 
   const handleRemove = (key: "coverImage" | "supportingImage1" | "supportingImage2") => {
-    const updatedImages = { ...images, [key]: null };
-    setImages(updatedImages);
-    onImagesChange(updatedImages);
+    commitImages((prev) => ({ ...prev, [key]: null }));
     setErrors((prev) => ({ ...prev, [key]: null }));
   };
 
@@ -112,18 +129,35 @@ export default function PhotoUploadGroup({ onImagesChange, required = true }: Ph
         </label>
 
         {url ? (
-          <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-navy-deep/40 aspect-video flex items-center justify-center group">
+          <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-navy-deep/40 aspect-video flex items-center justify-center">
             <img src={url} alt={label} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-navy-deep/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 p-2 bg-gradient-to-t from-navy-deep/95 to-transparent">
+              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-navy-deep/90 border border-electric-blue/40 text-[10px] font-bold uppercase tracking-wider text-electric-blue cursor-pointer hover:bg-electric-blue/15">
+                <UploadCloud className="w-3.5 h-3.5" />
+                Replace
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={isLoading}
+                  onChange={(e) => handleUpload(e, key)}
+                  className="absolute w-px h-px overflow-hidden opacity-0"
+                />
+              </label>
               <button
                 type="button"
                 onClick={() => handleRemove(key)}
-                className="p-2 rounded-full bg-red-500/25 border border-red-500/50 hover:bg-red-500/40 text-red-400 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/20 border border-red-500/50 text-[10px] font-bold uppercase tracking-wider text-red-300 hover:bg-red-500/35"
                 title="Remove photo"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
+                Remove
               </button>
             </div>
+            {isLoading && (
+              <div className="absolute inset-0 bg-navy-deep/70 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-electric-blue animate-spin" />
+              </div>
+            )}
           </div>
         ) : (
           <label className="border-2 border-dashed border-slate-700/80 rounded-2xl p-6 flex flex-col items-center justify-center bg-navy-deep/30 hover:bg-navy-deep/50 transition-colors cursor-pointer group relative aspect-video">

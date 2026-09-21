@@ -43,7 +43,7 @@ export function StoreInitializer() {
                     coverImage: p.cover_image || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
                     title: p.title,
                     clubId: p.club_id,
-                    clubName: p.organization_name || club?.name || "Unknown Club",
+                    clubName: club?.name || "Unknown Club",
                     avenueOfService: (p.avenues && p.avenues[0]) || "Community Service",
                     areaOfFocus: (p.focus_areas && p.focus_areas[0]) || "Education & Literacy",
                     beneficiaries: p.beneficiaries || 0,
@@ -53,7 +53,12 @@ export function StoreInitializer() {
                     description: p.description,
                     location: p.venue || "District 3192",
                     zone: club ? club.zone : "Unassigned",
-                    contributions: p.activity_expenses || 0,
+                    contributions: (() => {
+                      const cash = Number(p.cash_contribution) || 0;
+                      const inKind = Number(p.in_kind_contribution) || 0;
+                      const expenses = Number(p.activity_expenses) || 0;
+                      return cash + inKind > 0 ? cash + inKind : expenses;
+                    })(),
                     volunteerCount: p.volunteers || 0,
                     supportingImage1: p.supporting_image_1 || null,
                     supportingImage2: p.supporting_image_2 || null,

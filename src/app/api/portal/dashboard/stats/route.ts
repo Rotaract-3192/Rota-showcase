@@ -14,11 +14,19 @@ export async function GET() {
     const supabase = await createServerSupabaseClient();
     const clubIds = await scopedClubIds(actor);
 
+    // Club officers should see everything they submitted (drafts awaiting
+    // approval). District-wide / ZRR portal views stay published-only.
+    const clubScoped = Array.isArray(clubIds);
     let activitiesQuery = supabase
       .from('activities')
       .select('*, clubs(name, zone)')
-      .eq('status', 'PUBLISHED')
       .is('deleted_at', null);
+
+    if (clubScoped) {
+      activitiesQuery = activitiesQuery.in('status', ['PUBLISHED', 'DRAFT']);
+    } else {
+      activitiesQuery = activitiesQuery.eq('status', 'PUBLISHED');
+    }
 
     let clubsQuery = supabase
       .from('clubs')
@@ -78,7 +86,10 @@ export async function GET() {
         totalVolunteers += act.volunteers || 0;
         volunteerHours += act.volunteer_hours || 0;
         totalBeneficiaries += act.beneficiaries || 0;
-        contributions += (act.cash_contribution || 0) + (act.in_kind_contribution || 0);
+        const cash = Number(act.cash_contribution) || 0;
+        const inKind = Number(act.in_kind_contribution) || 0;
+        const expenses = Number(act.activity_expenses) || 0;
+        contributions += cash + inKind > 0 ? cash + inKind : expenses;
 
         if (!highestImpactAct || (act.beneficiaries || 0) > (highestImpactAct.beneficiaries || 0)) {
           highestImpactAct = act;
