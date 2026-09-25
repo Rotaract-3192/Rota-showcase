@@ -1,9 +1,30 @@
 import { NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
 
+/**
+ * One-time Super Admin provisioning. Disabled unless BOOTSTRAP_SECRET is set
+ * and the request sends matching header `x-bootstrap-secret`.
+ */
 export async function POST(req: Request) {
+  const expected = process.env.BOOTSTRAP_SECRET;
+  if (!expected) {
+    return NextResponse.json(
+      { error: 'Bootstrap is disabled. Set BOOTSTRAP_SECRET to enable.' },
+      { status: 403 }
+    );
+  }
+
+  const provided = req.headers.get('x-bootstrap-secret');
+  if (!provided || provided !== expected) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const { email, firstName, lastName, authId } = await req.json();
+    if (!email || !firstName || !authId) {
+      return NextResponse.json({ error: 'Missing email, firstName, or authId' }, { status: 400 });
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const bearerToken = await generateSupabaseJWT('service_role');
@@ -15,16 +36,14 @@ export async function POST(req: Request) {
       'Prefer': 'return=representation'
     };
 
-    // 1. Insert Profile
     const profileRes = await fetch(`${supabaseUrl}/rest/v1/member_profiles`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         first_name: firstName,
-        last_name: lastName,
+        last_name: lastName || '',
         email: email,
         auth_id: authId,
-        phone: '1234567890'
       })
     });
 
@@ -36,7 +55,6 @@ export async function POST(req: Request) {
     const profiles = await profileRes.json();
     const memberId = profiles[0].id;
 
-    // 2. Insert Super Admin Role
     const roleRes = await fetch(`${supabaseUrl}/rest/v1/member_roles`, {
       method: 'POST',
       headers,

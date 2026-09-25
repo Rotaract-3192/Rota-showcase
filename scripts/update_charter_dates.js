@@ -1,6 +1,7 @@
 const { Client } = require('pg');
 
-const dbUrl = "postgresql://postgres.your-tenant-id:babe728a8ce40f6a996084f51e06a6a0ee6d6e338c5629f75bef216ec93e9463@db.rotaract3192.org:5432/postgres?sslmode=disable";
+const dbUrl = process.env.SUPABASE_DB_URL;
+if (!dbUrl) { console.error("Set SUPABASE_DB_URL"); process.exit(1); }
 
 const charterMapping = [
   { searchStr: "Rotaract Bangalore West", dateStr: "9 Feb 2020" }, // defaulting year if missing

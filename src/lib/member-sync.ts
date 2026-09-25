@@ -1,6 +1,6 @@
 import { generateSupabaseJWT } from "@/lib/jwt";
 import { emailsForProfileLink } from "@/lib/clerk-emails";
-import { isDistrictWideAdminRole, isZrrRole } from "@/lib/zones";
+import { isDistrictWideAdminRole, isPrTeamRole, isZrrRole } from "@/lib/zones";
 
 const FETCH_TIMEOUT_MS = 12000;
 
@@ -133,7 +133,7 @@ async function attachRoles(rows: MemberProfileRow[]): Promise<MemberProfileRow[]
 }
 
 export function isDistrictRole(role: string): boolean {
-  return isDistrictWideAdminRole(role) || isZrrRole(role);
+  return isDistrictWideAdminRole(role) || isZrrRole(role) || isPrTeamRole(role);
 }
 
 function pickBestProfile(rows: MemberProfileRow[]): MemberProfileRow | null {

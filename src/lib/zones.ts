@@ -52,11 +52,23 @@ export function isDistrictWideAdminRole(role: string): boolean {
     "admin",
     "administrator",
     "district",
+    "drs",
   ].includes(normalized);
 }
 
 export function isZrrRole(role: string): boolean {
   return role.trim().toLowerCase() === "zrr";
+}
+
+/** District PR Team — publications / bulletins / photo pack only (not full Mission Control). */
+export function isPrTeamRole(role: string): boolean {
+  const normalized = role.trim().toLowerCase();
+  return (
+    normalized === "pr team" ||
+    normalized === "pr director" ||
+    normalized === "district pr" ||
+    normalized === "district public relations"
+  );
 }
 
 export function displayZone(value: string | null | undefined): string {

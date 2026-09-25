@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Waves, Heart, Mail, MapPin, Globe } from "lucide-react";
+import { Waves, Mail, MapPin } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export default function Footer() {
@@ -113,10 +113,16 @@ export default function Footer() {
           <p className="text-xs text-slate-500 font-metadata">
             &copy; {currentYear} Rotaract District 3192. All rights reserved.
           </p>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-metadata">
-            <span>Designed for transparency and community building with</span>
-            <Heart className="w-3 h-3 text-red-500 fill-red-500 animate-pulse" />
-            <span>by District 3192 Team.</span>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500 font-metadata">
+            <Link href="/privacy" className="hover:text-electric-blue transition-colors">
+              Privacy Notice
+            </Link>
+            <Link href="/terms" className="hover:text-electric-blue transition-colors">
+              Terms of Use
+            </Link>
+            <a href="mailto:secretariat@rotaract3192.org" className="hover:text-electric-blue transition-colors">
+              Data requests
+            </a>
           </div>
         </div>
       </div>

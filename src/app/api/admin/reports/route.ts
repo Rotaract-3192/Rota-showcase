@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
+import { jsonAuthzError, requireAdminActor } from '@/lib/portal-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -30,6 +31,7 @@ async function supabaseFetch(path: string, options: RequestInit = {}) {
 
 export async function GET(req: NextRequest) {
   try {
+    await requireAdminActor();
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type');
 
@@ -134,6 +136,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
   } catch (err: any) {
+    const authz = jsonAuthzError(err);
+    if (authz) return NextResponse.json(authz.body, { status: authz.status });
     console.error('GET /api/admin/reports error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

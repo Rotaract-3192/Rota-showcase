@@ -84,7 +84,8 @@ export default function BulletinUploadPage() {
           Club Bulletin
         </h1>
         <p className="text-slate-400 text-sm font-body">
-          Upload your club's monthly bulletin or newsletter in PDF format. Submitted files stay listed below.
+          Upload your club&apos;s monthly bulletin or newsletter in PDF format. This is separate from
+          ticking &quot;Submit for District Publication&quot; on a project report.
         </p>
       </div>
 

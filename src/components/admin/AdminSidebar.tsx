@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuthContext } from "@/components/providers/auth-provider";
 import { 
   LayoutDashboard, 
   BarChart4, 
@@ -19,13 +18,12 @@ import {
   ClipboardList, 
   BrainCircuit,
   LogOut,
-  Waves,
   UserCircle,
   Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
+const FULL_NAV = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "District Analytics", href: "/admin/analytics", icon: BarChart4 },
   { name: "Clubs", href: "/admin/clubs", icon: Building2 },
@@ -44,21 +42,30 @@ const NAV_ITEMS = [
   { name: "AI Command", href: "/admin/ai-command", icon: BrainCircuit },
 ];
 
+const PR_NAV = [
+  { name: "Publications", href: "/admin/publications", icon: FileText },
+];
+
 interface AdminSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  access?: "full" | "publications";
   user: {
     name: string;
     email: string;
+    roleLabel?: string;
   };
 }
 
-export default function AdminSidebar({ isOpen, onClose, user }: AdminSidebarProps) {
+export default function AdminSidebar({
+  isOpen,
+  onClose,
+  access = "full",
+  user,
+}: AdminSidebarProps) {
   const pathname = usePathname();
-  const { profileData } = useAuthContext();
-  const displayRole = [profileData?.primaryRole || "Administrator", profileData?.roles.find((r) => r.role === "ZRR")?.zone]
-    .filter(Boolean)
-    .join(" · ");
+  const navItems = access === "publications" ? PR_NAV : FULL_NAV;
+  const homeHref = access === "publications" ? "/admin/publications" : "/admin/dashboard";
 
   return (
     <aside 
@@ -67,11 +74,9 @@ export default function AdminSidebar({ isOpen, onClose, user }: AdminSidebarProp
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >
-      
-      {/* Brand Header */}
       <div className="h-16 border-b border-slate-800/60 flex items-center px-6">
         <Link 
-          href="/admin/dashboard" 
+          href={homeHref} 
           onClick={onClose}
           className="flex items-center gap-2 group"
         >
@@ -83,15 +88,14 @@ export default function AdminSidebar({ isOpen, onClose, user }: AdminSidebarProp
               MISSION CONTROL
             </span>
             <span className="font-metadata text-[8px] text-electric-blue tracking-[0.2em] uppercase font-bold leading-tight mt-0.5">
-              District 3192 Admin
+              {access === "publications" ? "PR Desk · 3192" : "District 3192 Admin"}
             </span>
           </div>
         </Link>
       </div>
 
-      {/* Navigation Links */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           
@@ -117,7 +121,6 @@ export default function AdminSidebar({ isOpen, onClose, user }: AdminSidebarProp
         })}
       </nav>
 
-      {/* Footer Profile area */}
       <div className="p-4 border-t border-slate-800/60 flex flex-col gap-2">
         <Link 
           href="/admin/profile"
@@ -130,7 +133,9 @@ export default function AdminSidebar({ isOpen, onClose, user }: AdminSidebarProp
           <div className="flex flex-col min-w-0">
             <p className="text-xs font-bold text-white truncate">{user.name}</p>
             <p className="text-[10px] text-slate-500 font-metadata truncate">{user.email}</p>
-            <p className="text-[10px] text-electric-blue font-metadata font-bold mt-0.5 truncate">{displayRole}</p>
+            <p className="text-[10px] text-electric-blue font-metadata font-bold mt-0.5 truncate">
+              {user.roleLabel || "Administrator"}
+            </p>
           </div>
         </Link>
         
@@ -143,7 +148,6 @@ export default function AdminSidebar({ isOpen, onClose, user }: AdminSidebarProp
           Exit Command Center
         </Link>
       </div>
-
     </aside>
   );
 }

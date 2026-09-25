@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
 import { canonicalizeZone, isZrrRole } from '@/lib/zones';
+import { jsonAuthzError, requireAdminActor } from '@/lib/portal-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -31,11 +32,14 @@ async function supabaseFetch(path: string, options: RequestInit = {}) {
 
 export async function GET() {
   try {
+    await requireAdminActor();
     const data = await supabaseFetch(
       '/member_profiles?select=id,first_name,last_name,email,phone,created_at,club_id,auth_id,clubs(name,zone),member_roles(role,zone,club_id)'
     );
     return NextResponse.json(data);
   } catch (err: any) {
+    const authz = jsonAuthzError(err);
+    if (authz) return NextResponse.json(authz.body, { status: authz.status });
     console.error('GET /api/admin/users error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -43,6 +47,7 @@ export async function GET() {
 
 export async function DELETE(req: NextRequest) {
   try {
+    await requireAdminActor();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -54,6 +59,8 @@ export async function DELETE(req: NextRequest) {
     
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    const authz = jsonAuthzError(err);
+    if (authz) return NextResponse.json(authz.body, { status: authz.status });
     console.error('DELETE /api/admin/users error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -61,6 +68,7 @@ export async function DELETE(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    await requireAdminActor();
     const body = await req.json();
     const { id, first_name, last_name, phone, club_id, role, zone } = body;
 
@@ -93,6 +101,8 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    const authz = jsonAuthzError(err);
+    if (authz) return NextResponse.json(authz.body, { status: authz.status });
     console.error('PATCH /api/admin/users error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

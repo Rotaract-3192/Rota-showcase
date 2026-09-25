@@ -1,5 +1,6 @@
 import { currentUser } from '@clerk/nextjs/server';
 import { fetchMemberRoles, isDistrictRole, linkAndLoadMemberProfile } from '@/lib/member-sync';
+import { isDistrictWideAdminRole, isPrTeamRole, isZrrRole } from '@/lib/zones';
 import SyncRedirect from './SyncRedirect';
 
 export const dynamic = 'force-dynamic';
@@ -36,9 +37,17 @@ export default async function SyncPage() {
 
     const roles = await fetchMemberRoles(profile.id);
     const isAdmin = roles.some(isDistrictRole);
-    const targetPath = isAdmin ? '/admin/dashboard' : '/portal/dashboard';
+    const publicationsOnly =
+      roles.some(isPrTeamRole) &&
+      !roles.some(isDistrictWideAdminRole) &&
+      !roles.some(isZrrRole);
+    const targetPath = !isAdmin
+      ? '/portal/dashboard'
+      : publicationsOnly
+        ? '/admin/publications'
+        : '/admin/dashboard';
 
-    return <SyncRedirect targetUrl={targetPath} message="Opening your club workspace..." />;
+    return <SyncRedirect targetUrl={targetPath} message="Opening your workspace..." />;
   } catch (error: any) {
     console.error("Error during sync:", error);
     return (

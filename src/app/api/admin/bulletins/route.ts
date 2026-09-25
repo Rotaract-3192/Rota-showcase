@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateSupabaseJWT } from "@/lib/jwt";
-import { jsonAuthzError, requireAdminActor } from "@/lib/portal-auth";
+import { jsonAuthzError, requirePublicationsReader } from "@/lib/portal-auth";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -23,11 +23,13 @@ async function supabaseFetch(path: string) {
 
 export async function GET() {
   try {
-    await requireAdminActor();
+    await requirePublicationsReader();
+    // Prefer plain select so missing FK embeds never blank the list
     const rows = await supabaseFetch(
-      "/club_bulletins?select=id,title,edition,file_url,created_at,club_id,clubs(name)&deleted_at=is.null&order=created_at.desc"
+      "/club_bulletins?select=id,title,edition,file_url,created_at,club_id,clubs(name)&order=created_at.desc"
     );
-    return NextResponse.json(rows || []);
+    const active = (Array.isArray(rows) ? rows : []).filter((row: any) => !row.deleted_at);
+    return NextResponse.json(active);
   } catch (err: any) {
     const authz = jsonAuthzError(err);
     if (authz) return NextResponse.json(authz.body, { status: authz.status });

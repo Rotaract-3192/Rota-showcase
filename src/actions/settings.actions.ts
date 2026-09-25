@@ -1,8 +1,8 @@
 "use server";
 
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { AuthzError, requireAdminActor } from '@/lib/portal-auth';
 
-// Generic setting interface based on the table we created
 export interface DistrictSettings {
   id: string;
   general: any;
@@ -12,10 +12,8 @@ export interface DistrictSettings {
   updated_at: string;
 }
 
-/**
- * Retrieves the global district settings row.
- */
 export async function getDistrictSettings(): Promise<DistrictSettings | null> {
+  await requireAdminActor();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('district_settings')
@@ -30,14 +28,19 @@ export async function getDistrictSettings(): Promise<DistrictSettings | null> {
   return data as DistrictSettings;
 }
 
-/**
- * Updates a specific section in the global district settings.
- * Valid sections: 'general', 'branding', 'security', 'notifications'.
- */
-export async function updateDistrictSettings(section: 'general' | 'branding' | 'security' | 'notifications', payload: any): Promise<boolean> {
+export async function updateDistrictSettings(
+  section: 'general' | 'branding' | 'security' | 'notifications',
+  payload: any
+): Promise<boolean> {
+  try {
+    await requireAdminActor();
+  } catch (err) {
+    if (err instanceof AuthzError) return false;
+    throw err;
+  }
+
   const supabase = await createServerSupabaseClient();
   
-  // Get the current row ID since it's a single-row config table
   const { data: current } = await supabase
     .from('district_settings')
     .select('id')

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
-import { currentUser } from '@clerk/nextjs/server';
-import { clubIdsInZone, jsonAuthzError, resolveAdminZoneFilter } from '@/lib/portal-auth';
+import { clubIdsInZone, jsonAuthzError, requireAdminActor, resolvePublicationsZoneFilter } from '@/lib/portal-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -33,7 +32,7 @@ async function supabaseFetch(path: string, options: RequestInit = {}) {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const { filterZone } = await resolveAdminZoneFilter(searchParams.get('zone'));
+    const { filterZone } = await resolvePublicationsZoneFilter(searchParams.get('zone'));
     const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
     const { periodRange, restTimeFilter } = await import('@/lib/reporting-period');
     const range = periodRange(searchParams.get('period') || 'ry');
@@ -104,15 +103,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const email = user.emailAddresses[0]?.emailAddress;
+    const actor = await requireAdminActor();
     
-    // Fetch the admin's profile ID to record as actor_id
-    const adminProfiles = await supabaseFetch(`/member_profiles?email=eq.${encodeURIComponent(email || '')}&select=id`);
-    const adminProfileId = (adminProfiles && adminProfiles.length > 0) ? adminProfiles[0].id : null;
+    const adminProfileId = actor.profileId;
 
     const { activityId, action } = await req.json();
 
@@ -186,6 +179,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    const authz = jsonAuthzError(err);
+    if (authz) return NextResponse.json(authz.body, { status: authz.status });
     console.error('POST /api/admin/activities error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

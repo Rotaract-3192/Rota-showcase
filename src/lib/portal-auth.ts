@@ -2,7 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { emailsForProfileLink } from "@/lib/clerk-emails";
 import { isDistrictRole } from "@/lib/member-sync";
-import { canonicalizeZone, isDistrictWideAdminRole, isZrrRole } from "@/lib/zones";
+import { canonicalizeZone, isDistrictWideAdminRole, isPrTeamRole, isZrrRole } from "@/lib/zones";
 
 export class AuthzError extends Error {
   status: number;
@@ -21,6 +21,7 @@ export type PortalActor = {
   isDistrict: boolean;
   isDistrictWide: boolean;
   isZrr: boolean;
+  isPrTeam: boolean;
   zone: string | null;
   email: string | null;
 };
@@ -117,15 +118,17 @@ export async function getPortalActor(): Promise<PortalActor | null> {
   const zrrZone = canonicalizeZone((roleRows || []).find((r) => isZrrRole(r.role))?.zone);
   const isDistrictWide = roles.some(isDistrictWideAdminRole);
   const isZrr = roles.some(isZrrRole);
+  const isPrTeam = roles.some(isPrTeamRole);
 
   return {
     userId,
     profileId: profile.id,
     clubId: profile.club_id || roleClubId,
     roles,
-    isDistrict: isDistrictWide || isZrr,
+    isDistrict: isDistrictWide || isZrr || isPrTeam,
     isDistrictWide,
     isZrr,
+    isPrTeam,
     zone: isZrr ? zrrZone : null,
     email: emails[0] || null,
   };
@@ -139,10 +142,23 @@ export async function requirePortalActor(): Promise<PortalActor> {
   return actor;
 }
 
+/** Full Mission Control (DRS / District Admin / Super Admin / ZRR). Not PR Team. */
 export async function requireAdminActor(): Promise<PortalActor> {
   const actor = await requirePortalActor();
+  if (actor.isPrTeam && !actor.isDistrictWide && !actor.isZrr) {
+    throw new AuthzError("Full admin access required. PR Team can only use Publications.", 403);
+  }
   if (!actor.isDistrict) {
     throw new AuthzError("Admin access required.", 403);
+  }
+  return actor;
+}
+
+/** Publications & bulletins readers: district admins, ZRR, and PR Team. */
+export async function requirePublicationsReader(): Promise<PortalActor> {
+  const actor = await requirePortalActor();
+  if (!actor.isDistrict) {
+    throw new AuthzError("Publications access required.", 403);
   }
   return actor;
 }
@@ -244,6 +260,21 @@ export async function resolveAdminZoneFilter(requestedZone?: string | null) {
   if (!actor.zone) {
     throw new AuthzError(
       "Your ZRR account has no zone assigned. Ask a district admin to set member_roles.zone to Arnava, Pravaha, Taranga, Varuna, Sagara, or Samudhra.",
+      403
+    );
+  }
+  return { actor, filterZone: actor.zone };
+}
+
+/** Zone filter for Publications readers (includes PR Team as district-wide read). */
+export async function resolvePublicationsZoneFilter(requestedZone?: string | null) {
+  const actor = await requirePublicationsReader();
+  if (actor.isDistrictWide || actor.isPrTeam) {
+    return { actor, filterZone: canonicalizeZone(requestedZone) };
+  }
+  if (!actor.zone) {
+    throw new AuthzError(
+      "Your ZRR account has no zone assigned. Ask a district admin to set member_roles.zone.",
       403
     );
   }

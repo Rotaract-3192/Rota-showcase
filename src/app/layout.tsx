@@ -3,6 +3,7 @@ import { Libre_Caslon_Text, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import CookieConsent from "@/components/CookieConsent";
 import ProjectDetailModal from "@/components/ProjectDetailModal";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { StoreInitializer } from "@/components/providers/StoreInitializer";
@@ -69,6 +70,7 @@ export default function RootLayout({
               
               {/* Footer */}
               <Footer />
+              <CookieConsent />
             </AuthProvider>
           </QueryProvider>
         </body>

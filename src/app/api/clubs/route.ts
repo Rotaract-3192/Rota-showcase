@@ -29,8 +29,8 @@ export async function GET() {
 
     const clubsData = await res.json();
     
-    // Fetch leaders
-    const leadersRes = await fetch(`${supabaseUrl}/rest/v1/club_leaders_directory?select=club_name,name,designation,email,phone`, {
+    // Leaders: public showcase needs name + designation only (no personal email/phone).
+    const leadersRes = await fetch(`${supabaseUrl}/rest/v1/club_leaders_directory?select=club_name,name,designation`, {
       headers: {
         'apikey': apiKey,
         'Authorization': `Bearer ${bearerToken}`,
@@ -43,9 +43,15 @@ export async function GET() {
       leadersData = await leadersRes.json();
     }
     
-    // Merge leaders into clubs
+    // Merge leaders into clubs — keep organisational club mailbox, not personal leader contacts.
     const clubsWithLeaders = clubsData.map((club: any) => {
-      const clubLeaders = leadersData.filter((l: any) => l.club_name === club.name);
+      const clubLeaders = leadersData
+        .filter((l: any) => l.club_name === club.name)
+        .map((l: any) => ({
+          club_name: l.club_name,
+          name: l.name,
+          designation: l.designation,
+        }));
       return {
         ...club,
         leaders: clubLeaders

@@ -46,11 +46,16 @@ export default function LoginPage() {
   
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   const handleRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId || !position || !fullName || !email) {
       alert("Please fill all required fields.");
+      return;
+    }
+    if (!consent) {
+      alert("Please accept the Privacy Notice to continue.");
       return;
     }
 
@@ -85,6 +90,7 @@ export default function LoginPage() {
     setPosition("President");
     setFullName("");
     setPhone("");
+    setConsent(false);
     setIsSubmitted(false);
     setView("login");
   };
@@ -272,9 +278,28 @@ export default function LoginPage() {
                     </div>
                   </div>
 
+                  <div className="flex items-start gap-2.5 mt-1">
+                    <input
+                      id="dpdp-consent"
+                      type="checkbox"
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      required
+                      className="mt-0.5 rounded border-slate-600 bg-navy-deep text-electric-blue focus:ring-electric-blue/40"
+                    />
+                    <label htmlFor="dpdp-consent" className="text-[11px] text-slate-400 font-body leading-relaxed">
+                      I agree that District 3192 may process my name, email, phone, club and role to review this
+                      access request, as described in the{" "}
+                      <Link href="/privacy" className="text-electric-blue hover:underline" target="_blank">
+                        Privacy Notice
+                      </Link>
+                      .
+                    </label>
+                  </div>
+
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !consent}
                     className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 mt-2 rounded-xl bg-electric-blue hover:bg-ocean-glow text-navy-deep font-bold text-xs uppercase tracking-wider transition-all focus:outline-none active:scale-95 disabled:opacity-50"
                   >
                     {isSubmitting ? "Submitting..." : "Submit Request"}

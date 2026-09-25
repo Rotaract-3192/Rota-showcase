@@ -462,6 +462,8 @@ export default function AdminUsersPage() {
                   <option value="Vice President" className="bg-navy-deep text-white">Vice President</option>
                   <option value="Secretary" className="bg-navy-deep text-white">Secretary</option>
                   <option value="ZRR" className="bg-navy-deep text-white">ZRR</option>
+                  <option value="PR Team" className="bg-navy-deep text-white">PR Team</option>
+                  <option value="DRS" className="bg-navy-deep text-white">DRS</option>
                   <option value="District Admin" className="bg-navy-deep text-white">District Admin</option>
                   <option value="Super Admin" className="bg-navy-deep text-white">Super Admin</option>
                 </select>
@@ -669,6 +671,8 @@ export default function AdminUsersPage() {
                   <option value="Vice President" className="bg-navy-deep text-white">Vice President</option>
                   <option value="Secretary" className="bg-navy-deep text-white">Secretary</option>
                   <option value="ZRR" className="bg-navy-deep text-white">ZRR</option>
+                  <option value="PR Team" className="bg-navy-deep text-white">PR Team</option>
+                  <option value="DRS" className="bg-navy-deep text-white">DRS</option>
                   <option value="District Admin" className="bg-navy-deep text-white">District Admin</option>
                   <option value="Super Admin" className="bg-navy-deep text-white">Super Admin</option>
                 </select>
