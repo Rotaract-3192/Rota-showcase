@@ -42,6 +42,38 @@ async function fetchAll(path: string) {
   return rows;
 }
 
+type ClubContact = { name: string; email: string | null; phone: string | null };
+
+async function loadClubContacts(clubIds: string[]) {
+  const byClub = new Map<string, Record<string, ClubContact>>();
+  if (clubIds.length === 0) return byClub;
+  try {
+    const rows = await fetchAll(
+      `/member_roles?select=role,club_id,member_profiles(first_name,last_name,email,phone,club_id,deleted_at)` +
+        `&role=in.(President,Secretary)&deleted_at=is.null`
+    );
+    const wanted = new Set(clubIds);
+    rows.forEach((row: any) => {
+      const profile = row.member_profiles;
+      const clubId = row.club_id || profile?.club_id;
+      if (!clubId || !wanted.has(clubId) || !profile || profile.deleted_at) return;
+      const contacts = byClub.get(clubId) || {};
+      if (!contacts[row.role]) {
+        contacts[row.role] = {
+          name: `${profile.first_name || ""} ${profile.last_name || ""}`.trim(),
+          email: profile.email || null,
+          phone: profile.phone || null,
+        };
+      }
+      byClub.set(clubId, contacts);
+    });
+  } catch (err) {
+    // Contacts are a convenience; never fail the analytics response over them.
+    console.error("Failed to load club contacts:", err);
+  }
+  return byClub;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -50,7 +82,8 @@ export async function GET(req: NextRequest) {
     const avenueFilter = searchParams.get("avenue") || "All";
     const clubIds = filterZone ? await clubIdsInZone(filterZone) : null;
 
-    let clubsPath = "/clubs?select=id,name,zone,member_count,total_projects&deleted_at=is.null";
+    let clubsPath =
+      "/clubs?select=id,name,zone,member_count,total_projects,email,club_email&deleted_at=is.null";
     let activitiesPath =
       "/activities?select=id,status,avenues,club_id,start_time,volunteers,beneficiaries,activity_expenses,cash_contribution,in_kind_contribution,clubs(name,zone)&deleted_at=is.null";
     activitiesPath += restTimeFilter("start_time", range);
@@ -70,6 +103,7 @@ export async function GET(req: NextRequest) {
           },
           avenueData: [],
           zoneData: [],
+          clubReporting: [],
         });
       }
       const filter = `id=in.(${clubIds.join(",")})`;
@@ -135,6 +169,7 @@ export async function GET(req: NextRequest) {
     let beneficiaries = 0;
     let fundsRaised = 0;
     const reportedClubIds = new Set<string>();
+    const clubActivity = new Map<string, { reports: number; published: number; lastReportDate: string | null }>();
     activities.forEach((act: any) => {
       volunteers += Number(act.volunteers) || 0;
       beneficiaries += Number(act.beneficiaries) || 0;
@@ -142,8 +177,37 @@ export async function GET(req: NextRequest) {
       const inKind = Number(act.in_kind_contribution) || 0;
       const expenses = Number(act.activity_expenses) || 0;
       fundsRaised += cash + inKind > 0 ? cash + inKind : expenses;
-      if (act.club_id) reportedClubIds.add(act.club_id);
+      if (act.club_id) {
+        reportedClubIds.add(act.club_id);
+        const entry = clubActivity.get(act.club_id) || { reports: 0, published: 0, lastReportDate: null };
+        entry.reports += 1;
+        if (act.status === "PUBLISHED") entry.published += 1;
+        if (act.start_time && (!entry.lastReportDate || act.start_time > entry.lastReportDate)) {
+          entry.lastReportDate = act.start_time;
+        }
+        clubActivity.set(act.club_id, entry);
+      }
     });
+
+    const contactsByClub = await loadClubContacts(clubs.map((club: any) => club.id));
+    const clubReporting = clubs
+      .map((club: any) => {
+        const stats = clubActivity.get(club.id);
+        const contacts = contactsByClub.get(club.id) || {};
+        return {
+          id: club.id,
+          name: club.name,
+          zone: canonicalizeZone(club.zone) || club.zone || "Unassigned",
+          reported: reportedClubIds.has(club.id),
+          reports: stats?.reports || 0,
+          published: stats?.published || 0,
+          lastReportDate: stats?.lastReportDate || null,
+          clubEmail: club.club_email || club.email || null,
+          president: contacts.President || null,
+          secretary: contacts.Secretary || null,
+        };
+      })
+      .sort((a: any, b: any) => a.zone.localeCompare(b.zone) || a.name.localeCompare(b.name));
 
     return NextResponse.json({
       totals: {
@@ -159,6 +223,7 @@ export async function GET(req: NextRequest) {
       },
       avenueData,
       zoneData,
+      clubReporting,
     });
   } catch (err: any) {
     const authz = jsonAuthzError(err);

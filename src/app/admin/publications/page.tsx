@@ -18,6 +18,7 @@ import {
 import { apiUrl } from "@/lib/api";
 import ReportingPeriodSelect from "@/components/admin/ReportingPeriodSelect";
 import { currentMonthPeriod, inPeriod, periodRange } from "@/lib/reporting-period";
+import { AVENUES_OF_SERVICE, activityMatchesAvenue } from "@/lib/avenues";
 
 interface PublicationRequest {
   id: string;
@@ -80,6 +81,7 @@ export default function AdminPublicationsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState(currentMonthPeriod());
+  const [selectedAvenue, setSelectedAvenue] = useState("All");
   const [selected, setSelected] = useState<PublicationRequest | null>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -147,10 +149,12 @@ export default function AdminPublicationsPage() {
 
   const filteredRequests = useMemo(
     () =>
-      requests.filter((item) =>
-        `${item.title} ${item.club} ${item.zone}`.toLowerCase().includes(searchTerm.toLowerCase())
+      requests.filter(
+        (item) =>
+          activityMatchesAvenue(item.avenues, selectedAvenue) &&
+          `${item.title} ${item.club} ${item.zone}`.toLowerCase().includes(searchTerm.toLowerCase())
       ),
-    [requests, searchTerm]
+    [requests, searchTerm, selectedAvenue]
   );
 
   const handleDownloadAll = async (item: PublicationRequest) => {
@@ -181,7 +185,24 @@ export default function AdminPublicationsPage() {
             View-only PR desk: bulletin PDFs and projects clubs submitted for district social media.
           </p>
         </div>
-        <ReportingPeriodSelect value={selectedPeriod} onChange={setSelectedPeriod} />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-1.5 min-w-[200px]">
+            <label className="text-[10px] uppercase font-bold text-slate-500 font-metadata">Avenue</label>
+            <select
+              value={selectedAvenue}
+              onChange={(e) => setSelectedAvenue(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-800 text-xs text-slate-300 focus:outline-none"
+            >
+              <option value="All">All avenues</option>
+              {AVENUES_OF_SERVICE.map((avenue) => (
+                <option key={avenue} value={avenue}>
+                  {avenue}
+                </option>
+              ))}
+            </select>
+          </div>
+          <ReportingPeriodSelect value={selectedPeriod} onChange={setSelectedPeriod} />
+        </div>
       </div>
 
       {loading ? (

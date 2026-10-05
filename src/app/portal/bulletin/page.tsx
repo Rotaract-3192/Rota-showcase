@@ -6,7 +6,19 @@ import GlassPanel from "@/components/GlassPanel";
 
 function isPdfFile(file: File) {
   const type = (file.type || "").toLowerCase();
-  return type === "application/pdf" || type === "application/x-pdf" || file.name.toLowerCase().endsWith(".pdf");
+  return type === "application/pdf" || type === "application/x-pdf" ||     file.name.toLowerCase().endsWith(".pdf");
+}
+
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+
+async function readJson(res: Response) {
+  const text = await res.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    if (res.status === 413) return { error: "PDF is too large for the server to accept. Please compress it and try again." };
+    return { error: `Server error (${res.status}). Please try again.` };
+  }
 }
 
 export default function BulletinUploadPage() {
@@ -39,6 +51,10 @@ export default function BulletinUploadPage() {
       setErrorMsg("Please upload a PDF file.");
       return;
     }
+    if (selectedFile.size > MAX_PDF_BYTES) {
+      setErrorMsg("PDF is larger than 10MB. Please compress it and try again.");
+      return;
+    }
     setErrorMsg("");
     setFile(selectedFile);
   };
@@ -54,7 +70,7 @@ export default function BulletinUploadPage() {
       const uploadData = new FormData();
       uploadData.append("file", file);
       const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadData });
-      const uploadJson = await uploadRes.json();
+      const uploadJson = await readJson(uploadRes);
       if (!uploadRes.ok) throw new Error(uploadJson.error || "Failed to upload PDF");
 
       const saveRes = await fetch("/api/portal/bulletins", {
@@ -62,7 +78,7 @@ export default function BulletinUploadPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, edition: month, fileUrl: uploadJson.url }),
       });
-      const saveJson = await saveRes.json();
+      const saveJson = await readJson(saveRes);
       if (!saveRes.ok) throw new Error(saveJson.error || "Failed to submit bulletin");
       setSuccessMsg(`Saved “${title}” for ${month}. District can open it under Admin → Publications.`);
       setFile(null);

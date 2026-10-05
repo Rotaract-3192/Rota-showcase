@@ -20,6 +20,8 @@ import { canonicalizeZone, DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib
 import { AVENUES_OF_SERVICE } from "@/lib/avenues";
 import { apiUrl } from "@/lib/api";
 import ReportingPeriodSelect from "@/components/admin/ReportingPeriodSelect";
+import ClubReportingModal, { type ClubReportingRow } from "@/components/admin/ClubReportingModal";
+import { periodOptions } from "@/lib/reporting-period";
 
 const COLORS = ["#00f0ff", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#ef4444", "#14b8a6"];
 
@@ -45,6 +47,8 @@ export default function AdminAnalyticsPage() {
   });
   const [avenueData, setAvenueData] = useState<{ name: string; value: number }[]>([]);
   const [zoneData, setZoneData] = useState<{ name: string; clubs: number; members: number; projects: number }[]>([]);
+  const [clubReporting, setClubReporting] = useState<ClubReportingRow[]>([]);
+  const [showClubList, setShowClubList] = useState(false);
 
   useEffect(() => {
     if (!isSuperAdmin && userZone) setSelectedZone(userZone);
@@ -66,6 +70,7 @@ export default function AdminAnalyticsPage() {
         });
         setAvenueData(data.avenueData || []);
         setZoneData(data.zoneData || []);
+        setClubReporting(data.clubReporting || []);
       })
       .catch((err) => console.error("Failed to load analytics:", err))
       .finally(() => setLoading(false));
@@ -143,11 +148,18 @@ export default function AdminAnalyticsPage() {
               <p className="text-xl font-headline font-bold text-white mt-1">₹{totals.fundsRaised.toLocaleString("en-IN")}</p>
               <p className="text-[10px] text-slate-500 mt-1">Cash + in-kind, else project cost</p>
             </GlassPanel>
-            <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40">
-              <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold flex items-center gap-1"><ClipboardCheck className="w-3 h-3" /> Clubs completed reporting</span>
-              <p className="text-xl font-headline font-bold text-white mt-1">{totals.clubsReported} / {totals.clubsTotal}</p>
-              <p className="text-[10px] text-slate-500 mt-1">Clubs with at least one submission in this period</p>
-            </GlassPanel>
+            <button
+              type="button"
+              onClick={() => setShowClubList(true)}
+              className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-electric-blue/60"
+            >
+              <GlassPanel className="p-5 h-full border-slate-800/60 bg-navy-dark/40 hover:border-electric-blue/40 transition-colors cursor-pointer">
+                <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold flex items-center gap-1"><ClipboardCheck className="w-3 h-3" /> Clubs completed reporting</span>
+                <p className="text-xl font-headline font-bold text-white mt-1">{totals.clubsReported} / {totals.clubsTotal}</p>
+                <p className="text-[10px] text-slate-500 mt-1">Clubs with at least one submission in this period</p>
+                <p className="text-[10px] text-electric-blue font-bold mt-2">View which clubs →</p>
+              </GlassPanel>
+            </button>
             <GlassPanel className="p-5 border-slate-800/60 bg-navy-dark/40 flex items-center justify-between">
               <div>
                 <span className="text-[10px] text-slate-500 font-metadata uppercase tracking-wider font-bold">Top zone</span>
@@ -225,6 +237,14 @@ export default function AdminAnalyticsPage() {
             </GlassPanel>
           </div>
         </>
+      )}
+
+      {showClubList && (
+        <ClubReportingModal
+          rows={clubReporting}
+          periodLabel={periodOptions().find((option) => option.value === selectedPeriod)?.label || selectedPeriod}
+          onClose={() => setShowClubList(false)}
+        />
       )}
     </div>
   );

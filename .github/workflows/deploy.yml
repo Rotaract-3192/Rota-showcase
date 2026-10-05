@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -16,14 +21,22 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 30m
           script: |
+            set -e
+            echo "==> connected as $(whoami) on $(hostname)"
+
+            echo "==> cd /opt/applications/rota-showcase"
             cd /opt/applications/rota-showcase
 
-            git fetch origin
-            git reset --hard origin/main
+            echo "==> git pull"
+            git pull
 
+            echo "==> docker compose up -d --build"
             docker compose up -d --build
 
-            docker image prune -f
+            echo "==> docker image prune"
+            docker image prune -f || true
+
+            echo "==> deployed $(git rev-parse --short HEAD)"

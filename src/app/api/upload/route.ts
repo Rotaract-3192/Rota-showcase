@@ -11,6 +11,7 @@ const ALLOWED_MIME = new Set([
   'application/pdf',
 ]);
 const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf']);
+const PDF_ALIAS_MIME = new Set(['', 'application/pdf', 'application/x-pdf', 'application/octet-stream']);
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +32,10 @@ export async function POST(req: NextRequest) {
     }
 
     const fileExt = (file.name.split('.').pop() || '').toLowerCase();
-    const mimeOk = ALLOWED_MIME.has(file.type) || (file.type === '' && ALLOWED_EXT.has(fileExt));
+    // Some browsers (Windows/Android) report PDFs as application/x-pdf or application/octet-stream.
+    const isPdf = fileExt === 'pdf' && PDF_ALIAS_MIME.has(file.type);
+    const mimeOk =
+      ALLOWED_MIME.has(file.type) || isPdf || (file.type === '' && ALLOWED_EXT.has(fileExt));
     if (!mimeOk || !ALLOWED_EXT.has(fileExt)) {
       return NextResponse.json(
         { error: 'Only JPEG, PNG, WebP, GIF, or PDF files are allowed' },
@@ -44,10 +48,16 @@ export async function POST(req: NextRequest) {
 
     const { error: uploadError } = await supabase.storage
       .from('public_assets')
-      .upload(filePath, file, { contentType: file.type || undefined });
+      .upload(filePath, file, { contentType: fileExt === 'pdf' ? 'application/pdf' : file.type || undefined });
 
     if (uploadError) {
       console.error('Storage upload error:', uploadError);
+      if (/mime type|not supported|exceeded|too large/i.test(uploadError.message || '')) {
+        return NextResponse.json(
+          { error: `Storage rejected the file: ${uploadError.message}` },
+          { status: 400 }
+        );
+      }
       throw uploadError;
     }
 
