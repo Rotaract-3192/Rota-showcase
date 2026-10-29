@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import AdminDataTable from "@/components/admin/AdminDataTable";
 import GlassPanel from "@/components/GlassPanel";
 import { useStore, Club } from "@/store/useStore";
+import { useAuthContext } from "@/components/providers/auth-provider";
+import { DISTRICT_ZONES, isDistrictWideAdminRole } from "@/lib/zones";
+import { apiUrl } from "@/lib/api";
 import { 
   ShieldCheck, 
   MoreHorizontal, 
@@ -16,20 +19,112 @@ import {
   Layers,
   Mail,
   Calendar,
-  Award
+  Award,
+  Plus,
+  Loader2
 } from "lucide-react";
+
+const EMPTY_OFFICIAL = { name: "", email: "", phone: "" };
+
+const EMPTY_FORM = {
+  name: "",
+  zone: "",
+  clubType: "Community Based",
+  email: "",
+  partnerClub: "",
+  charterDate: "",
+  description: "",
+  president: { ...EMPTY_OFFICIAL },
+  secretary: { ...EMPTY_OFFICIAL },
+};
 
 export default function AdminClubsPage() {
   const clubs = useStore((state) => state.clubs);
+  const setClubs = useStore((state) => state.setClubs);
   const projects = useStore((state) => state.projects);
+  const { profileData } = useAuthContext();
+  const canAddClub = profileData?.roles.some((r) => isDistrictWideAdminRole(r.role)) ?? false;
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZone, setSelectedZone] = useState("All");
   const [selectedClubType, setSelectedClubType] = useState("All");
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const setSelectedProjectId = useStore((state) => state.setSelectedProjectId);
 
-  const zones = ["Arnava", "Pravaha", "Taranga", "Varuna", "Sagara", "Samudhra"];
+  const zones = DISTRICT_ZONES;
   const clubTypes = ["Community Based", "Institution Based"];
+
+  const handleAddClub = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.zone) {
+      setFormError("Club name and zone are required.");
+      return;
+    }
+    if (!form.president.name.trim() || !form.president.email.trim()) {
+      setFormError("President name and email are required so they can sign in to the portal.");
+      return;
+    }
+    const secretaryFilled =
+      form.secretary.name.trim() || form.secretary.email.trim() || form.secretary.phone.trim();
+    if (secretaryFilled && (!form.secretary.name.trim() || !form.secretary.email.trim())) {
+      setFormError("Secretary needs both a name and an email, or leave that section blank.");
+      return;
+    }
+    setSaving(true);
+    setFormError("");
+    try {
+      const res = await fetch(apiUrl("/api/admin/clubs"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Failed to add club");
+      const created = json.club;
+      const mapped: Club = {
+        id: created.id,
+        name: created.name,
+        logo: created.logo_url || "",
+        leaders: [
+          form.president.name ? { designation: "President", name: form.president.name } : null,
+          form.secretary.name ? { designation: "Secretary", name: form.secretary.name } : null,
+        ].filter(Boolean) as { designation: string; name: string }[],
+        charterYear: created.charter_date
+          ? new Date(created.charter_date).getFullYear().toString()
+          : new Date().getFullYear().toString(),
+        memberCount: created.member_count || 0,
+        totalProjects: created.total_projects || 0,
+        totalPoints: created.total_points || 0,
+        zone: created.zone,
+        description: created.description || "",
+        email: created.email || created.club_email || "",
+        clubType: created.club_type || form.clubType,
+        partnerClub: created.partner_rotary_club || "",
+      };
+      setClubs([mapped, ...clubs]);
+      const invited = Array.isArray(json.invited) ? json.invited : [];
+      const inviteErrors = Array.isArray(json.inviteErrors) ? json.inviteErrors : [];
+      const invitedLabel = invited.length
+        ? ` Clerk invites sent to ${invited.map((p: { role: string; email: string }) => `${p.role} (${p.email})`).join(" and ")}.`
+        : "";
+      const warnLabel = inviteErrors.length ? ` Invite issue: ${inviteErrors.join(" ")}` : "";
+      setSuccessMsg(`${created.name} is on the portal.${invitedLabel}${warnLabel}`);
+      setIsAddOpen(false);
+      setForm({
+        ...EMPTY_FORM,
+        president: { ...EMPTY_OFFICIAL },
+        secretary: { ...EMPTY_OFFICIAL },
+      });
+    } catch (err: any) {
+      setFormError(err.message || "Failed to add club");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const sortedClubs = [...clubs].sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) {
@@ -217,28 +312,46 @@ export default function AdminClubsPage() {
           <p className="text-slate-400 text-sm font-body mt-1">
             Manage all Rotaract clubs within District 3192.
           </p>
+          {successMsg && (
+            <p className="text-xs text-emerald-400 mt-2">{successMsg}</p>
+          )}
         </div>
-        <button 
-          onClick={() => {
-            const headers = ["ID", "Name", "President", "Charter Year", "Members", "Projects", "Points", "Zone", "Email"];
-            const getPres = (leaders: any[]) => {
-              const pres = leaders.find(l => l.designation.toLowerCase().includes("president"));
-              return pres ? pres.name : "N/A";
-            };
-            const rows = clubs.map(c => [c.id, `"${c.name}"`, `"${getPres(c.leaders)}"`, c.charterYear, c.memberCount, c.totalProjects, c.totalPoints, c.zone, c.email]);
-            const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", "District_3192_Clubs_Directory.csv");
-            link.click();
-          }}
-          className="px-4 py-2 flex items-center gap-2 rounded-lg bg-navy-deep border border-slate-700 hover:border-slate-500 text-xs font-bold text-white transition-colors shadow-sm"
-        >
-          <Download className="w-4 h-4" />
-          Export Directory
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {canAddClub && (
+            <button
+              type="button"
+              onClick={() => {
+                setFormError("");
+                setIsAddOpen(true);
+              }}
+              className="px-4 py-2 flex items-center gap-2 rounded-lg bg-electric-blue hover:bg-ocean-glow text-navy-deep text-xs font-bold transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Add club
+            </button>
+          )}
+          <button 
+            onClick={() => {
+              const headers = ["ID", "Name", "President", "Charter Year", "Members", "Projects", "Points", "Zone", "Email"];
+              const getPres = (leaders: any[]) => {
+                const pres = leaders.find(l => l.designation.toLowerCase().includes("president"));
+                return pres ? pres.name : "N/A";
+              };
+              const rows = clubs.map(c => [c.id, `"${c.name}"`, `"${getPres(c.leaders)}"`, c.charterYear, c.memberCount, c.totalProjects, c.totalPoints, c.zone, c.email]);
+              const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+              const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.setAttribute("href", url);
+              link.setAttribute("download", "District_3192_Clubs_Directory.csv");
+              link.click();
+            }}
+            className="px-4 py-2 flex items-center gap-2 rounded-lg bg-navy-deep border border-slate-700 hover:border-slate-500 text-xs font-bold text-white transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Export Directory
+          </button>
+        </div>
       </div>
 
       <AdminDataTable<Club>
@@ -338,6 +451,196 @@ export default function AdminClubsPage() {
           }
         ]}
       />
+
+      {isAddOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-deep/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="bg-navy-dark/90 border border-slate-800/80 p-6 rounded-2xl max-w-lg w-full shadow-2xl flex flex-col gap-4 animate-scale-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800/60 pb-3">
+              <h3 className="font-headline text-lg font-bold text-white flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-electric-blue" />
+                Add a club
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsAddOpen(false)}
+                className="text-slate-400 hover:text-white transition-colors text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Adds the club to the directory and sends Clerk invites to the President (and Secretary, if filled) so they can sign in.
+            </p>
+            {formError && (
+              <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs">
+                {formError}
+              </div>
+            )}
+            <form onSubmit={handleAddClub} className="flex flex-col gap-4 text-sm font-body">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Club name</label>
+                <input
+                  type="text"
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. Rotaract Club of Jayanagar"
+                  className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Zone</label>
+                  <select
+                    required
+                    value={form.zone}
+                    onChange={(e) => setForm({ ...form, zone: e.target.value })}
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 appearance-none cursor-pointer"
+                  >
+                    <option value="">Select zone...</option>
+                    {DISTRICT_ZONES.map((zone) => (
+                      <option key={zone} value={zone}>{zone}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Club type</label>
+                  <select
+                    value={form.clubType}
+                    onChange={(e) => setForm({ ...form, clubType: e.target.value })}
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 appearance-none cursor-pointer"
+                  >
+                    {clubTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Club email (optional)</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="club@example.com"
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Charter date (optional)</label>
+                  <input
+                    type="date"
+                    value={form.charterDate}
+                    onChange={(e) => setForm({ ...form, charterDate: e.target.value })}
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Partner Rotary club (optional)</label>
+                <input
+                  type="text"
+                  value={form.partnerClub}
+                  onChange={(e) => setForm({ ...form, partnerClub: e.target.value })}
+                  placeholder="e.g. Rotary Club of Bengaluru Jayanagar"
+                  className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-metadata uppercase tracking-wider font-bold">Short description (optional)</label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  rows={3}
+                  placeholder="Shown on the public club directory."
+                  className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50 resize-none"
+                />
+              </div>
+
+              <div className="border-t border-slate-800/60 pt-4 flex flex-col gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Users className="w-4 h-4 text-electric-blue" />
+                    Club officials
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    They get an email invite to create a portal login. President is required; Secretary is optional.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-800/80 p-3 flex flex-col gap-3">
+                  <p className="text-[10px] font-metadata uppercase tracking-wider font-bold text-electric-blue">President</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      required
+                      value={form.president.name}
+                      onChange={(e) => setForm({ ...form, president: { ...form.president, name: e.target.value } })}
+                      placeholder="Full name"
+                      className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                    />
+                    <input
+                      type="email"
+                      required
+                      value={form.president.email}
+                      onChange={(e) => setForm({ ...form, president: { ...form.president, email: e.target.value } })}
+                      placeholder="email@example.com"
+                      className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                    />
+                  </div>
+                  <input
+                    type="tel"
+                    value={form.president.phone}
+                    onChange={(e) => setForm({ ...form, president: { ...form.president, phone: e.target.value } })}
+                    placeholder="Phone (optional)"
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                  />
+                </div>
+                <div className="rounded-xl border border-slate-800/80 p-3 flex flex-col gap-3">
+                  <p className="text-[10px] font-metadata uppercase tracking-wider font-bold text-slate-400">Secretary (optional)</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      value={form.secretary.name}
+                      onChange={(e) => setForm({ ...form, secretary: { ...form.secretary, name: e.target.value } })}
+                      placeholder="Full name"
+                      className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                    />
+                    <input
+                      type="email"
+                      value={form.secretary.email}
+                      onChange={(e) => setForm({ ...form, secretary: { ...form.secretary, email: e.target.value } })}
+                      placeholder="email@example.com"
+                      className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                    />
+                  </div>
+                  <input
+                    type="tel"
+                    value={form.secretary.phone}
+                    onChange={(e) => setForm({ ...form, secretary: { ...form.secretary, phone: e.target.value } })}
+                    placeholder="Phone (optional)"
+                    className="px-3 py-2 rounded-lg bg-navy-deep border border-slate-700/60 text-white focus:outline-none focus:border-electric-blue/50"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full py-2.5 rounded-lg bg-electric-blue hover:bg-ocean-glow text-navy-deep font-bold transition-all mt-2 active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving club...
+                  </>
+                ) : (
+                  "Save club"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
