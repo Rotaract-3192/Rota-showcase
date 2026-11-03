@@ -44,6 +44,26 @@ async function fetchAll(path: string) {
 
 type ClubContact = { name: string; email: string | null; phone: string | null };
 
+function normalizeProjectType(value: unknown): string {
+  const raw = String(value || "").trim();
+  if (!raw) return "Unspecified";
+  if (raw === "Participatory Project with Sponsor Club") return "Participatory Project";
+  if (
+    raw === "Standalone" ||
+    raw === "Joint" ||
+    raw === "Participatory Project" ||
+    raw === "Project with Sponsor Club"
+  ) {
+    return raw;
+  }
+  const lower = raw.toLowerCase();
+  if (lower.includes("participatory")) return "Participatory Project";
+  if (lower.includes("joint")) return "Joint";
+  if (lower.includes("sponsor")) return "Project with Sponsor Club";
+  if (lower.includes("standalone") || lower.includes("stand alone")) return "Standalone";
+  return "Unspecified";
+}
+
 async function loadClubContacts(clubIds: string[]) {
   const byClub = new Map<string, Record<string, ClubContact>>();
   if (clubIds.length === 0) return byClub;
@@ -85,7 +105,7 @@ export async function GET(req: NextRequest) {
     let clubsPath =
       "/clubs?select=id,name,zone,member_count,total_projects,email,club_email&deleted_at=is.null";
     let activitiesPath =
-      "/activities?select=id,status,avenues,club_id,start_time,volunteers,beneficiaries,activity_expenses,cash_contribution,in_kind_contribution,clubs(name,zone)&deleted_at=is.null";
+      "/activities?select=id,status,avenues,activity_category,club_id,start_time,volunteers,beneficiaries,activity_expenses,cash_contribution,in_kind_contribution,clubs(name,zone)&deleted_at=is.null";
     activitiesPath += restTimeFilter("start_time", range);
     if (clubIds) {
       if (clubIds.length === 0) {
@@ -95,6 +115,7 @@ export async function GET(req: NextRequest) {
             published: 0,
             pending: 0,
             unspecifiedAvenue: 0,
+            unspecifiedType: 0,
             volunteers: 0,
             beneficiaries: 0,
             fundsRaised: 0,
@@ -102,6 +123,7 @@ export async function GET(req: NextRequest) {
             clubsTotal: 0,
           },
           avenueData: [],
+          projectTypeData: [],
           zoneData: [],
           clubReporting: [],
         });
@@ -138,6 +160,24 @@ export async function GET(req: NextRequest) {
     const avenueData = Array.from(avenueMap.entries())
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
+
+    const typeMap = new Map<string, number>();
+    let unspecifiedType = 0;
+    published.forEach((act: any) => {
+      const label = normalizeProjectType(act.activity_category);
+      if (label === "Unspecified") unspecifiedType += 1;
+      typeMap.set(label, (typeMap.get(label) || 0) + 1);
+    });
+    const projectTypeOrder = [
+      "Standalone",
+      "Joint",
+      "Participatory Project",
+      "Project with Sponsor Club",
+      "Unspecified",
+    ];
+    const projectTypeData = projectTypeOrder
+      .filter((name) => typeMap.has(name))
+      .map((name) => ({ name, value: typeMap.get(name) || 0 }));
 
     const zoneProjectCounts = new Map<string, number>();
     published.forEach((act: any) => {
@@ -215,6 +255,7 @@ export async function GET(req: NextRequest) {
         published: published.length,
         pending: pending.length,
         unspecifiedAvenue,
+        unspecifiedType,
         volunteers,
         beneficiaries,
         fundsRaised,
@@ -222,6 +263,7 @@ export async function GET(req: NextRequest) {
         clubsTotal: clubs.length,
       },
       avenueData,
+      projectTypeData,
       zoneData,
       clubReporting,
     });

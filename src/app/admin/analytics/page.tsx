@@ -39,6 +39,7 @@ export default function AdminAnalyticsPage() {
     published: 0,
     pending: 0,
     unspecifiedAvenue: 0,
+    unspecifiedType: 0,
     volunteers: 0,
     beneficiaries: 0,
     fundsRaised: 0,
@@ -46,6 +47,7 @@ export default function AdminAnalyticsPage() {
     clubsTotal: 0,
   });
   const [avenueData, setAvenueData] = useState<{ name: string; value: number }[]>([]);
+  const [projectTypeData, setProjectTypeData] = useState<{ name: string; value: number }[]>([]);
   const [zoneData, setZoneData] = useState<{ name: string; clubs: number; members: number; projects: number }[]>([]);
   const [clubReporting, setClubReporting] = useState<ClubReportingRow[]>([]);
   const [showClubList, setShowClubList] = useState(false);
@@ -65,10 +67,11 @@ export default function AdminAnalyticsPage() {
       .then((res) => res.json())
       .then((data) => {
         setTotals(data.totals || {
-          reported: 0, published: 0, pending: 0, unspecifiedAvenue: 0,
+          reported: 0, published: 0, pending: 0, unspecifiedAvenue: 0, unspecifiedType: 0,
           volunteers: 0, beneficiaries: 0, fundsRaised: 0, clubsReported: 0, clubsTotal: 0,
         });
         setAvenueData(data.avenueData || []);
+        setProjectTypeData(data.projectTypeData || []);
         setZoneData(data.zoneData || []);
         setClubReporting(data.clubReporting || []);
       })
@@ -81,6 +84,8 @@ export default function AdminAnalyticsPage() {
     ? (totals.published / zoneData.reduce((sum, row) => sum + row.clubs, 0)).toFixed(1)
     : "0";
   const avenueSum = avenueData.reduce((sum, row) => sum + row.value, 0);
+  const projectTypeSum = projectTypeData.reduce((sum, row) => sum + row.value, 0);
+  const TYPE_COLORS = ["#00f0ff", "#f59e0b", "#10b981", "#8b5cf6", "#64748b"];
 
   return (
     <div className="flex flex-col gap-6 max-w-[1600px] mx-auto pb-12 animate-fade-in">
@@ -230,6 +235,56 @@ export default function AdminAnalyticsPage() {
                     </div>
                   ))}
                   {avenueData.length === 0 && (
+                    <span className="text-xs text-slate-500">No published projects in this filter.</span>
+                  )}
+                </div>
+              </div>
+            </GlassPanel>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <GlassPanel className="p-6 border-slate-800/60 bg-navy-dark/40 flex flex-col gap-6">
+              <div>
+                <h3 className="font-headline text-lg font-bold text-white">Project type</h3>
+                <p className="text-xs text-slate-400 font-metadata mt-1">
+                  {projectTypeSum} published projects by type (Standalone, Joint, Participatory)
+                  {totals.unspecifiedType ? ` · ${totals.unspecifiedType} untagged` : ""}
+                </p>
+              </div>
+              <div className="h-80 w-full flex flex-col sm:flex-row items-center justify-center gap-6">
+                <div className="h-64 w-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={projectTypeData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {projectTypeData.map((entry, index) => (
+                          <Cell key={entry.name} fill={TYPE_COLORS[index % TYPE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: "#0b1120", borderColor: "#1e293b", borderRadius: "8px" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {projectTypeData.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded shrink-0"
+                        style={{ backgroundColor: TYPE_COLORS[index % TYPE_COLORS.length] }}
+                      />
+                      <span className="text-xs text-slate-300 font-body">
+                        {entry.name} ({entry.value})
+                      </span>
+                    </div>
+                  ))}
+                  {projectTypeData.length === 0 && (
                     <span className="text-xs text-slate-500">No published projects in this filter.</span>
                   )}
                 </div>
