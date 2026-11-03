@@ -1,6 +1,7 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { generateSupabaseJWT } from "@/lib/jwt";
 import { clerkInviteRedirectUrl } from "@/lib/app-url";
+import { assertUniqueClubOfficerRole } from "@/lib/club-officer-roles";
 import { canonicalizeZone } from "@/lib/zones";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -101,6 +102,7 @@ export async function invitePortalUser(input: InvitePortalUserInput) {
     `/member_roles?member_id=eq.${profileId}&role=eq.${encodeURIComponent(role)}&select=id,club_id`
   );
   if (!existingRoles || existingRoles.length === 0) {
+    await assertUniqueClubOfficerRole(clubId, role, profileId);
     await supabaseFetch("/member_roles", {
       method: "POST",
       body: JSON.stringify({

@@ -13,23 +13,66 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+    if (!normalizedEmail) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+
     const bearerToken = await generateSupabaseJWT('service_role');
+    const headers = {
+      'apikey': apiKey,
+      'Authorization': `Bearer ${bearerToken}`,
+      'Content-Type': 'application/json',
+    };
+
+    // Block requests for emails that already have a portal profile.
+    const existingProfileRes = await fetch(
+      `${supabaseUrl}/rest/v1/member_profiles?email=ilike.${encodeURIComponent(normalizedEmail)}&deleted_at=is.null&select=id,first_name,last_name&limit=1`,
+      { headers }
+    );
+    if (existingProfileRes.ok) {
+      const existing = await existingProfileRes.json();
+      if (Array.isArray(existing) && existing.length > 0) {
+        return NextResponse.json(
+          {
+            error:
+              'This email already has portal access. Sign in with the same email, or ask district admin to resend the invite from Users. Do not submit a new access request.',
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    const pendingRes = await fetch(
+      `${supabaseUrl}/rest/v1/access_requests?email=ilike.${encodeURIComponent(normalizedEmail)}&status=eq.PENDING&deleted_at=is.null&select=id&limit=1`,
+      { headers }
+    );
+    if (pendingRes.ok) {
+      const pending = await pendingRes.json();
+      if (Array.isArray(pending) && pending.length > 0) {
+        return NextResponse.json(
+          {
+            error:
+              'An access request for this email is already pending. Please wait for district admin to review it.',
+          },
+          { status: 409 }
+        );
+      }
+    }
 
     const res = await fetch(
       `${supabaseUrl}/rest/v1/access_requests`,
       {
         method: 'POST',
         headers: {
-          'apikey': apiKey,
-          'Authorization': `Bearer ${bearerToken}`,
-          'Content-Type': 'application/json',
+          ...headers,
           'Prefer': 'return=minimal',
         },
         body: JSON.stringify({
           club_id,
           requested_role,
           full_name,
-          email,
+          email: normalizedEmail,
           phone: phone || null,
           status: 'PENDING',
           zone: zone || null,

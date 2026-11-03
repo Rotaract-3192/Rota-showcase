@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import AdminDataTable from "@/components/admin/AdminDataTable";
-import { UserCircle, Shield, Mail, Loader2, Settings2, MoreHorizontal, Eye, Edit2, Trash2 } from "lucide-react";
+import { UserCircle, Shield, Mail, Loader2, Settings2, MoreHorizontal, Eye, Edit2, Trash2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DISTRICT_ZONES } from "@/lib/zones";
 import { apiUrl } from "@/lib/api";
@@ -53,6 +53,7 @@ export default function AdminUsersPage() {
   const [saving, setSaving] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [relinkingId, setRelinkingId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -71,7 +72,7 @@ export default function AdminUsersPage() {
           homeClubZone: u.clubs?.zone || "",
           role: (u.member_roles || []).find((r: any) => String(r.role).toLowerCase() === "zrr")?.role
             || u.member_roles?.[0]?.role
-            || "President",
+            || "No role",
           zone: (u.member_roles || []).find((r: any) => String(r.role).toLowerCase() === "zrr")?.zone
             || "",
           status: (u.auth_id?.startsWith("pending_") ? "Pending" : "Active") as 'Active' | 'Suspended' | 'Pending',
@@ -176,6 +177,32 @@ export default function AdminUsersPage() {
 
   const handleDelete = (user: User) => {
     setUserToDelete(user);
+  };
+
+  const handleRelink = async (user: User) => {
+    if (
+      !confirm(
+        `Resend portal invite to ${user.email}?\n\nThis clears their old login link and emails a fresh Clerk invite. They must sign in with this exact email.`
+      )
+    ) {
+      return;
+    }
+    setRelinkingId(user.id);
+    try {
+      const res = await fetch(apiUrl("/api/admin/users/relink"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Failed to resend invite");
+      alert(json.message || `Invite sent to ${user.email}`);
+      await fetchUsers();
+    } catch (err: any) {
+      alert(err.message || "Failed to resend invite");
+    } finally {
+      setRelinkingId(null);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -367,6 +394,18 @@ export default function AdminUsersPage() {
                   title="Edit User"
                 >
                   <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleRelink(user)}
+                  disabled={relinkingId === user.id}
+                  className="p-1.5 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-electric-blue transition-colors disabled:opacity-50"
+                  title="Resend invite / Relink login"
+                >
+                  {relinkingId === user.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
                 </button>
                 <button 
                   onClick={() => handleDelete(user)}

@@ -3,6 +3,7 @@ import { generateSupabaseJWT } from '@/lib/jwt';
 import { clerkClient } from '@clerk/nextjs/server';
 import { jsonAuthzError, requireAdminActor } from '@/lib/portal-auth';
 import { clerkInviteRedirectUrl } from '@/lib/app-url';
+import { assertUniqueClubOfficerRole } from '@/lib/club-officer-roles';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -144,6 +145,11 @@ export async function POST(req: NextRequest) {
         `/member_roles?member_id=eq.${profileId}&role=eq.${encodeURIComponent(request.requested_role)}&select=id`
       );
       if (!existingRoles || existingRoles.length === 0) {
+        try {
+          await assertUniqueClubOfficerRole(request.club_id, request.requested_role, profileId);
+        } catch (uniqueErr: any) {
+          return NextResponse.json({ error: uniqueErr.message }, { status: 409 });
+        }
         await supabaseFetch('/member_roles', {
           method: 'POST',
           body: JSON.stringify({

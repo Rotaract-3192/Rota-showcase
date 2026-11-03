@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
 import { canonicalizeZone, isZrrRole } from '@/lib/zones';
 import { jsonAuthzError, requireAdminActor } from '@/lib/portal-auth';
+import { assertUniqueClubOfficerRole } from '@/lib/club-officer-roles';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -34,7 +35,7 @@ export async function GET() {
   try {
     await requireAdminActor();
     const data = await supabaseFetch(
-      '/member_profiles?select=id,first_name,last_name,email,phone,created_at,club_id,auth_id,clubs(name,zone),member_roles(role,zone,club_id)'
+      '/member_profiles?deleted_at=is.null&select=id,first_name,last_name,email,phone,created_at,club_id,auth_id,clubs(name,zone),member_roles(role,zone,club_id)&member_roles.deleted_at=is.null'
     );
     return NextResponse.json(data);
   } catch (err: any) {
@@ -87,6 +88,11 @@ export async function PATCH(req: NextRequest) {
     });
 
     if (role) {
+      try {
+        await assertUniqueClubOfficerRole(club_id || null, role, id);
+      } catch (uniqueErr: any) {
+        return NextResponse.json({ error: uniqueErr.message }, { status: 409 });
+      }
       await supabaseFetch(`/member_roles?member_id=eq.${id}`, { method: 'DELETE' });
       await supabaseFetch('/member_roles', {
         method: 'POST',

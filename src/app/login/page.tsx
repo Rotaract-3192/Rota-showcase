@@ -103,8 +103,9 @@ export default function LoginPage() {
       
       {isUnauthorized && (
         <div className="z-50 mb-6 bg-red-500/10 border border-red-500/50 text-red-200 px-6 py-4 rounded-xl max-w-md w-full text-center text-sm font-bold shadow-xl animate-fade-in">
-          ⚠️ Authentication Error: Your Clerk account is not linked to any active District Profile. 
-          Please request access below first, or sign in with an approved email.
+          ⚠️ Authentication Error: Your Clerk account is not linked to any active District Profile.
+          Sign in with the exact email district approved. If you already had access, ask admin to
+          resend your invite from Users — do not submit a new access request for the same email.
         </div>
       )}
 
