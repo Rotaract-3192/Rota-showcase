@@ -65,7 +65,7 @@ export async function invitePortalUser(input: InvitePortalUserInput) {
   });
 
   const existingProfiles = await supabaseFetch(
-    `/member_profiles?email=eq.${encodeURIComponent(email)}&select=id,club_id`
+    `/member_profiles?email=eq.${encodeURIComponent(email)}&select=id,club_id,deleted_at,auth_id`
   );
   let profileId = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0].id : null;
 
@@ -91,15 +91,23 @@ export async function invitePortalUser(input: InvitePortalUserInput) {
       throw new Error("Failed to create member profile");
     }
     profileId = newProfiles[0].id;
-  } else if (clubId && !existingProfiles[0].club_id) {
+  } else {
+    // Soft-deleted profiles still hold the unique email — revive them so login works again.
+    const patch: Record<string, unknown> = { deleted_at: null };
+    if (clubId) patch.club_id = clubId;
+    if (phone) patch.phone = phone;
+    const authId = existingProfiles[0].auth_id;
+    if (!authId || String(authId).startsWith("pending_")) {
+      patch.auth_id = `pending_${email}`;
+    }
     await supabaseFetch(`/member_profiles?id=eq.${profileId}`, {
       method: "PATCH",
-      body: JSON.stringify({ club_id: clubId, ...(phone ? { phone } : {}) }),
+      body: JSON.stringify(patch),
     });
   }
 
   const existingRoles = await supabaseFetch(
-    `/member_roles?member_id=eq.${profileId}&role=eq.${encodeURIComponent(role)}&select=id,club_id`
+    `/member_roles?member_id=eq.${profileId}&role=eq.${encodeURIComponent(role)}&select=id,club_id,deleted_at`
   );
   if (!existingRoles || existingRoles.length === 0) {
     await assertUniqueClubOfficerRole(clubId, role, profileId);
@@ -113,15 +121,13 @@ export async function invitePortalUser(input: InvitePortalUserInput) {
       }),
     });
   } else {
-    const patch: Record<string, unknown> = {};
+    const patch: Record<string, unknown> = { deleted_at: null };
     if (assignedZone) patch.zone = assignedZone;
-    if (clubId && !existingRoles[0].club_id) patch.club_id = clubId;
-    if (Object.keys(patch).length) {
-      await supabaseFetch(`/member_roles?id=eq.${existingRoles[0].id}`, {
-        method: "PATCH",
-        body: JSON.stringify(patch),
-      });
-    }
+    if (clubId) patch.club_id = clubId;
+    await supabaseFetch(`/member_roles?id=eq.${existingRoles[0].id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
   }
 
   try {

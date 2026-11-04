@@ -114,7 +114,10 @@ export async function POST(req: NextRequest) {
         console.error('Clerk invitation failed (continuing approval):', inviteErr);
       }
 
-      const existingProfiles = await supabaseFetch(`/member_profiles?email=eq.${encodeURIComponent(request.email)}&select=id`);
+      const normalizedEmail = String(request.email || '').trim().toLowerCase();
+      const existingProfiles = await supabaseFetch(
+        `/member_profiles?email=eq.${encodeURIComponent(normalizedEmail)}&select=id,deleted_at,auth_id,club_id`
+      );
       let profileId = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0].id : null;
 
       if (!profileId) {
@@ -126,12 +129,12 @@ export async function POST(req: NextRequest) {
           method: 'POST',
           headers: { 'Prefer': 'return=representation' },
           body: JSON.stringify({
-            email: request.email,
+            email: normalizedEmail,
             first_name: firstName,
             last_name: lastName,
             phone: request.phone,
             club_id: request.club_id,
-            auth_id: `pending_${request.email}`
+            auth_id: `pending_${normalizedEmail}`
           })
         });
 
@@ -139,10 +142,25 @@ export async function POST(req: NextRequest) {
           throw new Error('Failed to create member profile');
         }
         profileId = newProfiles[0].id;
+      } else {
+        // Revive soft-deleted profiles; otherwise approve/invite looks successful but login still fails.
+        const patch: Record<string, unknown> = {
+          deleted_at: null,
+          club_id: request.club_id || existingProfiles[0].club_id || null,
+          phone: request.phone || null,
+        };
+        const authId = existingProfiles[0].auth_id;
+        if (!authId || String(authId).startsWith('pending_')) {
+          patch.auth_id = `pending_${normalizedEmail}`;
+        }
+        await supabaseFetch(`/member_profiles?id=eq.${profileId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(patch),
+        });
       }
 
       const existingRoles = await supabaseFetch(
-        `/member_roles?member_id=eq.${profileId}&role=eq.${encodeURIComponent(request.requested_role)}&select=id`
+        `/member_roles?member_id=eq.${profileId}&role=eq.${encodeURIComponent(request.requested_role)}&select=id,deleted_at`
       );
       if (!existingRoles || existingRoles.length === 0) {
         try {
@@ -158,6 +176,15 @@ export async function POST(req: NextRequest) {
             club_id: request.club_id,
             zone: request.zone || null
           })
+        });
+      } else {
+        await supabaseFetch(`/member_roles?id=eq.${existingRoles[0].id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            deleted_at: null,
+            club_id: request.club_id || null,
+            zone: request.zone || null,
+          }),
         });
       }
 

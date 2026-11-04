@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const rows = await supabaseFetch(
-      `/member_profiles?id=eq.${id}&deleted_at=is.null&select=id,email,first_name,last_name`
+      `/member_profiles?id=eq.${id}&select=id,email,first_name,last_name,deleted_at`
     );
     const profile = Array.isArray(rows) ? rows[0] : null;
     if (!profile?.email) {
@@ -48,7 +48,11 @@ export async function POST(req: NextRequest) {
     const email = String(profile.email).trim().toLowerCase();
     await supabaseFetch(`/member_profiles?id=eq.${id}`, {
       method: "PATCH",
-      body: JSON.stringify({ auth_id: `pending_${email}`, email }),
+      body: JSON.stringify({
+        auth_id: `pending_${email}`,
+        email,
+        deleted_at: null,
+      }),
     });
 
     const client = await clerkClient();
