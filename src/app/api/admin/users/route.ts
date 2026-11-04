@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
 import { canonicalizeZone, isZrrRole } from '@/lib/zones';
 import { jsonAuthzError, requireAdminActor } from '@/lib/portal-auth';
-import { assertUniqueClubOfficerRole } from '@/lib/club-officer-roles';
+import { assertRoleAssignmentLimits } from '@/lib/club-officer-roles';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -96,11 +96,20 @@ export async function PATCH(req: NextRequest) {
 
     if (role) {
       try {
-        await assertUniqueClubOfficerRole(club_id || null, role, id);
+        await assertRoleAssignmentLimits({
+          role,
+          clubId: club_id || null,
+          zone: assignedZone,
+          excludeMemberId: id,
+        });
       } catch (uniqueErr: any) {
         return NextResponse.json({ error: uniqueErr.message }, { status: 409 });
       }
-      await supabaseFetch(`/member_roles?member_id=eq.${id}`, { method: 'DELETE' });
+      const now = new Date().toISOString();
+      await supabaseFetch(`/member_roles?member_id=eq.${id}&deleted_at=is.null`, {
+        method: 'PATCH',
+        body: JSON.stringify({ deleted_at: now }),
+      });
       await supabaseFetch('/member_roles', {
         method: 'POST',
         body: JSON.stringify({

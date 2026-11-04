@@ -1,7 +1,7 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { generateSupabaseJWT } from "@/lib/jwt";
 import { clerkInviteRedirectUrl } from "@/lib/app-url";
-import { assertUniqueClubOfficerRole } from "@/lib/club-officer-roles";
+import { assertRoleAssignmentLimits } from "@/lib/club-officer-roles";
 import { canonicalizeZone } from "@/lib/zones";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -124,7 +124,12 @@ export async function invitePortalUser(input: InvitePortalUserInput): Promise<In
     ? [...existingRolesRaw].sort((a, b) => Number(!!a.deleted_at) - Number(!!b.deleted_at))
     : [];
   if (existingRoles.length === 0) {
-    await assertUniqueClubOfficerRole(clubId, role, profileId);
+    await assertRoleAssignmentLimits({
+      role,
+      clubId,
+      zone: assignedZone || input.zone,
+      excludeMemberId: profileId,
+    });
     await supabaseFetch("/member_roles", {
       method: "POST",
       body: JSON.stringify({
@@ -135,6 +140,16 @@ export async function invitePortalUser(input: InvitePortalUserInput): Promise<In
       }),
     });
   } else {
+    // Reviving an existing role for the same person is fine; still check ZRR/VP/President
+    // if they were soft-deleted and another holder took the slot meanwhile.
+    if (existingRoles[0].deleted_at) {
+      await assertRoleAssignmentLimits({
+        role,
+        clubId,
+        zone: assignedZone || input.zone,
+        excludeMemberId: profileId,
+      });
+    }
     const patch: Record<string, unknown> = { deleted_at: null };
     if (assignedZone) patch.zone = assignedZone;
     if (clubId) patch.club_id = clubId;
