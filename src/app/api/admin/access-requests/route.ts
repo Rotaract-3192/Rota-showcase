@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSupabaseJWT } from '@/lib/jwt';
-import { clerkClient } from '@clerk/nextjs/server';
 import { jsonAuthzError, requireAdminActor } from '@/lib/portal-auth';
-import { clerkInviteRedirectUrl } from '@/lib/app-url';
-import { assertUniqueClubOfficerRole } from '@/lib/club-officer-roles';
+import { invitePortalUser } from '@/lib/invite-user';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -103,96 +101,29 @@ export async function POST(req: NextRequest) {
     const request = requests[0];
 
     if (action === 'Approved') {
-      const client = await clerkClient();
+      let inviteResult;
       try {
-        await client.invitations.createInvitation({
-          emailAddress: request.email,
-          redirectUrl: clerkInviteRedirectUrl(),
-          ignoreExisting: true
+        inviteResult = await invitePortalUser({
+          name: request.full_name,
+          email: request.email,
+          phone: request.phone,
+          clubId: request.club_id,
+          role: request.requested_role,
+          zone: request.zone,
+          actorId: actor.profileId,
         });
       } catch (inviteErr: any) {
-        console.error('Clerk invitation failed (continuing approval):', inviteErr);
-      }
-
-      const normalizedEmail = String(request.email || '').trim().toLowerCase();
-      const existingProfiles = await supabaseFetch(
-        `/member_profiles?email=eq.${encodeURIComponent(normalizedEmail)}&select=id,deleted_at,auth_id,club_id`
-      );
-      let profileId = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0].id : null;
-
-      if (!profileId) {
-        const names = String(request.full_name || '').trim().split(/\s+/);
-        const firstName = names[0] || '';
-        const lastName = names.slice(1).join(' ') || '';
-
-        const newProfiles = await supabaseFetch('/member_profiles', {
-          method: 'POST',
-          headers: { 'Prefer': 'return=representation' },
-          body: JSON.stringify({
-            email: normalizedEmail,
-            first_name: firstName,
-            last_name: lastName,
-            phone: request.phone,
-            club_id: request.club_id,
-            auth_id: `pending_${normalizedEmail}`
-          })
-        });
-
-        if (!newProfiles || newProfiles.length === 0) {
-          throw new Error('Failed to create member profile');
-        }
-        profileId = newProfiles[0].id;
-      } else {
-        // Revive soft-deleted profiles; otherwise approve/invite looks successful but login still fails.
-        const patch: Record<string, unknown> = {
-          deleted_at: null,
-          club_id: request.club_id || existingProfiles[0].club_id || null,
-          phone: request.phone || null,
-        };
-        const authId = existingProfiles[0].auth_id;
-        if (!authId || String(authId).startsWith('pending_')) {
-          patch.auth_id = `pending_${normalizedEmail}`;
-        }
-        await supabaseFetch(`/member_profiles?id=eq.${profileId}`, {
-          method: 'PATCH',
-          body: JSON.stringify(patch),
-        });
-      }
-
-      const existingRoles = await supabaseFetch(
-        `/member_roles?member_id=eq.${profileId}&role=eq.${encodeURIComponent(request.requested_role)}&select=id,deleted_at`
-      );
-      if (!existingRoles || existingRoles.length === 0) {
-        try {
-          await assertUniqueClubOfficerRole(request.club_id, request.requested_role, profileId);
-        } catch (uniqueErr: any) {
-          return NextResponse.json({ error: uniqueErr.message }, { status: 409 });
-        }
-        await supabaseFetch('/member_roles', {
-          method: 'POST',
-          body: JSON.stringify({
-            member_id: profileId,
-            role: request.requested_role,
-            club_id: request.club_id,
-            zone: request.zone || null
-          })
-        });
-      } else {
-        await supabaseFetch(`/member_roles?id=eq.${existingRoles[0].id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            deleted_at: null,
-            club_id: request.club_id || null,
-            zone: request.zone || null,
-          }),
-        });
+        return NextResponse.json(
+          { error: inviteErr.message || 'Failed to provision portal access' },
+          { status: 409 }
+        );
       }
 
       try {
         await supabaseFetch('/notifications', {
           method: 'POST',
           body: JSON.stringify({
-            user_id: profileId,
+            user_id: inviteResult.profileId,
             title: 'Access Request Approved',
             message: `Your request for the role ${request.requested_role} has been approved. Welcome to the portal!`,
             link: '/portal',

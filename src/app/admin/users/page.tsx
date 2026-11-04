@@ -121,11 +121,9 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inviteForm)
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to invite user");
-      }
-      alert("User successfully invited! An email invitation was triggered.");
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Failed to invite user");
+      alert(json.message || "User access is ready on the portal.");
       setIsInviteModalOpen(false);
       setInviteForm({
         name: "",
@@ -553,7 +551,7 @@ export default function AdminUsersPage() {
             </div>
             <h3 className="font-headline text-xl font-bold text-white">Delete User?</h3>
             <p className="text-sm text-slate-300 font-body">
-              Are you sure you want to delete <span className="font-bold text-white">{userToDelete.name}</span>? This action cannot be undone and will remove all their access.
+              Soft-remove <span className="font-bold text-white">{userToDelete.name}</span>? They will lose portal access, but you can invite them again later with the same email.
             </p>
             <div className="flex items-center gap-3 mt-4">
               <button 

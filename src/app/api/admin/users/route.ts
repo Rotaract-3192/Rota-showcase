@@ -54,11 +54,18 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    // This will cascade delete member_roles if foreign keys are set up, 
-    // but just to be safe, we delete roles first if needed, or just let Supabase handle it if CASCADE is enabled.
-    await supabaseFetch(`/member_profiles?id=eq.${id}`, { method: 'DELETE' });
-    
-    return NextResponse.json({ success: true });
+    // Soft-delete only — hard deletes break re-invites (email uniqueness) and hide recovery.
+    const now = new Date().toISOString();
+    await supabaseFetch(`/member_roles?member_id=eq.${id}&deleted_at=is.null`, {
+      method: 'PATCH',
+      body: JSON.stringify({ deleted_at: now }),
+    });
+    await supabaseFetch(`/member_profiles?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ deleted_at: now }),
+    });
+
+    return NextResponse.json({ success: true, softDeleted: true });
   } catch (err: any) {
     const authz = jsonAuthzError(err);
     if (authz) return NextResponse.json(authz.body, { status: authz.status });

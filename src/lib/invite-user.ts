@@ -38,8 +38,21 @@ export type InvitePortalUserInput = {
   actorId?: string | null;
 };
 
-/** Creates a Clerk invite + member profile + role so the person can sign in to the portal. */
-export async function invitePortalUser(input: InvitePortalUserInput) {
+export type InvitePortalUserResult = {
+  profileId: string;
+  email: string;
+  role: string;
+  inviteSent: boolean;
+  inviteWarning: string | null;
+};
+
+function clerkErrorMessage(err: unknown): string {
+  const anyErr = err as { errors?: { message?: string }[]; message?: string };
+  return anyErr?.errors?.[0]?.message || anyErr?.message || String(err);
+}
+
+/** Creates/revives the district profile first, then best-effort sends a Clerk invite email. */
+export async function invitePortalUser(input: InvitePortalUserInput): Promise<InvitePortalUserResult> {
   const name = String(input.name || "").trim();
   const email = String(input.email || "").trim().toLowerCase();
   const role = String(input.role || "").trim();
@@ -57,15 +70,10 @@ export async function invitePortalUser(input: InvitePortalUserInput) {
     );
   }
 
-  const client = await clerkClient();
-  await client.invitations.createInvitation({
-    emailAddress: email,
-    redirectUrl: clerkInviteRedirectUrl(),
-    ignoreExisting: true,
-  });
-
+  // 1) Provision / revive district profile BEFORE Clerk — otherwise an existing Clerk
+  //    account (common after re-invites) aborts the whole flow and leaves no access.
   const existingProfiles = await supabaseFetch(
-    `/member_profiles?email=eq.${encodeURIComponent(email)}&select=id,club_id,deleted_at,auth_id`
+    `/member_profiles?email=ilike.${encodeURIComponent(email)}&select=id,club_id,deleted_at,auth_id&limit=1`
   );
   let profileId = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0].id : null;
 
@@ -92,11 +100,14 @@ export async function invitePortalUser(input: InvitePortalUserInput) {
     }
     profileId = newProfiles[0].id;
   } else {
-    // Soft-deleted profiles still hold the unique email — revive them so login works again.
-    const patch: Record<string, unknown> = { deleted_at: null };
+    const patch: Record<string, unknown> = {
+      deleted_at: null,
+      email,
+    };
     if (clubId) patch.club_id = clubId;
     if (phone) patch.phone = phone;
     const authId = existingProfiles[0].auth_id;
+    // Keep a real Clerk user id; only reset placeholder pending_* links.
     if (!authId || String(authId).startsWith("pending_")) {
       patch.auth_id = `pending_${email}`;
     }
@@ -106,10 +117,13 @@ export async function invitePortalUser(input: InvitePortalUserInput) {
     });
   }
 
-  const existingRoles = await supabaseFetch(
+  const existingRolesRaw = await supabaseFetch(
     `/member_roles?member_id=eq.${profileId}&role=eq.${encodeURIComponent(role)}&select=id,club_id,deleted_at`
   );
-  if (!existingRoles || existingRoles.length === 0) {
+  const existingRoles = Array.isArray(existingRolesRaw)
+    ? [...existingRolesRaw].sort((a, b) => Number(!!a.deleted_at) - Number(!!b.deleted_at))
+    : [];
+  if (existingRoles.length === 0) {
     await assertUniqueClubOfficerRole(clubId, role, profileId);
     await supabaseFetch("/member_roles", {
       method: "POST",
@@ -130,6 +144,23 @@ export async function invitePortalUser(input: InvitePortalUserInput) {
     });
   }
 
+  // 2) Clerk invite is best-effort. Existing Clerk users cannot get a new invitation email —
+  //    they should simply sign in; their profile is already linked/ready above.
+  let inviteSent = false;
+  let inviteWarning: string | null = null;
+  try {
+    const client = await clerkClient();
+    await client.invitations.createInvitation({
+      emailAddress: email,
+      redirectUrl: clerkInviteRedirectUrl(),
+      ignoreExisting: true,
+    });
+    inviteSent = true;
+  } catch (err) {
+    inviteWarning = clerkErrorMessage(err);
+    console.error("Clerk invite failed (district profile still provisioned):", inviteWarning);
+  }
+
   try {
     await supabaseFetch("/audit_logs", {
       method: "POST",
@@ -139,12 +170,12 @@ export async function invitePortalUser(input: InvitePortalUserInput) {
         table_name: "member_profiles",
         record_id: profileId,
         old_data: null,
-        new_data: JSON.stringify({ email, role, clubId }),
+        new_data: JSON.stringify({ email, role, clubId, inviteSent, inviteWarning }),
       }),
     });
   } catch (err) {
     console.error("invitePortalUser audit log failed:", err);
   }
 
-  return { profileId, email, role };
+  return { profileId, email, role, inviteSent, inviteWarning };
 }

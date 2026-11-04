@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const actor = await requireAdminActor();
     const { name, email, phone, clubId, role, zone } = await req.json();
 
-    await invitePortalUser({
+    const result = await invitePortalUser({
       name,
       email,
       phone,
@@ -17,7 +17,13 @@ export async function POST(req: NextRequest) {
       actorId: actor.profileId,
     });
 
-    return NextResponse.json({ success: true });
+    const message = result.inviteSent
+      ? `Access ready for ${result.email}. Clerk invite email was sent.`
+      : `Access ready for ${result.email}. They already have (or could not receive) a Clerk invite — ask them to sign in with this exact email.${
+          result.inviteWarning ? ` (${result.inviteWarning})` : ""
+        }`;
+
+    return NextResponse.json({ success: true, ...result, message });
   } catch (err: any) {
     const authz = jsonAuthzError(err);
     if (authz) return NextResponse.json(authz.body, { status: authz.status });

@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              'This email already has portal access. Sign in with the same email, or ask district admin to resend the invite from Users. Do not submit a new access request.',
+              'This email already has portal access. Sign in with the same email (use Sign in securely). If login fails, ask district admin to use Users → Resend invite / Relink — do not submit another access request.',
           },
           { status: 409 }
         );
